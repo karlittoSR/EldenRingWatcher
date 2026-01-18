@@ -1,0 +1,21 @@
+## Build outputs
+bin/
+obj/
+output/
+
+## User-specific files
+*.user
+*.suo
+*.userprefs
+.vs/
+
+## Logs
+logs/
+
+## Temporary files
+*.tmp
+*.log
+convert.ps1
+
+## Keep icon source
+!icon.png

@@ -1,0 +1,485 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Windows.Forms;
+using SoulMemory;
+using SoulMemory.EldenRing;
+
+namespace EldenRingWatcher
+{
+    class Program
+    {
+        static Config config = null!;
+        static string SignalFile = null!;
+        static string LatestSignalFile = null!;
+        static MainForm mainForm = null!;
+
+        [STAThread]
+        static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            mainForm = new MainForm();
+            
+            // Setup button actions
+            mainForm.SetReloadAction(ReloadConfig);
+            mainForm.SetClearLogsAction(ClearLogs);
+            mainForm.SetEditConfigAction(EditConfig);
+            mainForm.SetSetFlagAction(SetFlag);
+            mainForm.SetSetPositionAction(SetPosition);
+
+            // Load initial configuration
+            if (!LoadConfiguration())
+            {
+                MessageBox.Show("Failed to load configuration. Please check config.json.", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Start monitoring in background thread
+            var monitorThread = new Thread(MonitorGameLoop)
+            {
+                IsBackground = true
+            };
+            monitorThread.Start();
+
+            Application.Run(mainForm);
+        }
+
+        static bool LoadConfiguration()
+        {
+            string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+            
+            if (!File.Exists(configPath))
+            {
+                mainForm?.AppendLog($"[ERROR] Configuration file not found: {configPath}");
+                mainForm?.UpdateStatus("Configuration not found", System.Drawing.Color.Red);
+                return false;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(configPath);
+                config = JsonSerializer.Deserialize<Config>(json, new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                })!;
+                
+                // Setup log file paths
+                SignalFile = Path.GetFullPath(Path.Combine(config.Settings.LogsPath, "events.txt"));
+                LatestSignalFile = Path.GetFullPath(Path.Combine(config.Settings.LogsPath, "latest.json"));
+                Directory.CreateDirectory(Path.GetDirectoryName(SignalFile)!);
+
+                mainForm?.AppendLog($"[CONFIG] Loaded {config.EventFlags.Count} event flags");
+                mainForm?.AppendLog($"[CONFIG] Loaded {config.PositionSplits.Count} position splits");
+                mainForm?.AppendLog($"[CONFIG] Poll: {config.Settings.PollIntervalMs}ms | Debounce: {config.Settings.DebounceMs}ms");
+                mainForm?.UpdateConfig($"{config.EventFlags.Count} flags, {config.PositionSplits.Count} positions");
+                mainForm?.UpdateStatus("Configuration loaded", System.Drawing.Color.LightGreen);
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                mainForm?.AppendLog($"[ERROR] Failed to load config: {ex.Message}");
+                mainForm?.UpdateStatus("Configuration error", System.Drawing.Color.Red);
+                return false;
+            }
+        }
+
+        static void ReloadConfig()
+        {
+            mainForm.AppendLog("[INFO] Reloading configuration...");
+            if (LoadConfiguration())
+            {
+                mainForm.AppendLog("[INFO] Configuration reloaded successfully");
+            }
+        }
+
+        static void ClearLogs()
+        {
+            SafeTruncateLogs();
+            mainForm.AppendLog("[INFO] Log files cleared");
+        }
+
+        static void EditConfig()
+        {
+            try
+            {
+                var settingsEditor = new SettingsEditorForm();
+                
+                // Load current settings
+                settingsEditor.LoadSettings(
+                    config.Settings.PollIntervalMs,
+                    config.Settings.DebounceMs,
+                    config.Settings.LogsPath
+                );
+
+                // Show dialog
+                if (settingsEditor.ShowDialog() == DialogResult.OK)
+                {
+                    // Update config with new settings
+                    var newConfig = config with
+                    {
+                        Settings = config.Settings with
+                        {
+                            PollIntervalMs = settingsEditor.PollIntervalMs,
+                            DebounceMs = settingsEditor.DebounceMs,
+                            LogsPath = settingsEditor.LogsPath
+                        }
+                    };
+
+                    // Save to file
+                    string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
+
+                    mainForm.AppendLog($"[INFO] Settings updated: Poll={settingsEditor.PollIntervalMs}ms, Debounce={settingsEditor.DebounceMs}ms");
+                    
+                    // Reload config
+                    ReloadConfig();
+                }
+            }
+            catch (Exception ex)
+            {
+                mainForm.AppendLog($"[ERROR] Failed to edit settings: {ex.Message}");
+                MessageBox.Show($"Failed to edit settings: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        static void SetFlag()
+        {
+            try
+            {
+                var flagEditor = new FlagEditorForm();
+                
+                // Load current flags
+                flagEditor.Flags = config.EventFlags.Select(f => new FlagEditorForm.FlagEntry
+                {
+                    Flag = f.Flag,
+                    Token = f.Token
+                }).ToList();
+
+                // Show dialog
+                if (flagEditor.ShowDialog() == DialogResult.OK)
+                {
+                    // Update config with new flags
+                    var newConfig = config with
+                    {
+                        EventFlags = flagEditor.Flags.Select(f => new EventFlagConfig
+                        {
+                            Flag = f.Flag,
+                            Token = f.Token
+                        }).ToList()
+                    };
+
+                    // Save to file
+                    string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
+
+                    mainForm.AppendLog($"[INFO] Saved {flagEditor.Flags.Count} event flags to config");
+                    
+                    // Reload config
+                    ReloadConfig();
+                }
+            }
+            catch (Exception ex)
+            {
+                mainForm.AppendLog($"[ERROR] Failed to edit flags: {ex.Message}");
+                MessageBox.Show($"Failed to edit flags: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        static void SetPosition()
+        {
+            try
+            {
+                var positionEditor = new PositionEditorForm();
+                
+                // Load current positions
+                positionEditor.Positions = config.PositionSplits.Select(p => new PositionEditorForm.PositionEntry
+                {
+                    Token = p.Token,
+                    Map = p.Map,
+                    X = p.X,
+                    Y = p.Y,
+                    Z = p.Z,
+                    Radius = p.Radius
+                }).ToList();
+
+                // Show dialog
+                if (positionEditor.ShowDialog() == DialogResult.OK)
+                {
+                    // Update config with new positions
+                    var newConfig = config with
+                    {
+                        PositionSplits = positionEditor.Positions.Select(p => new PosSplitConfig
+                        {
+                            Token = p.Token,
+                            Map = p.Map,
+                            X = p.X,
+                            Y = p.Y,
+                            Z = p.Z,
+                            Radius = p.Radius
+                        }).ToList()
+                    };
+
+                    // Save to file
+                    string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+                    var options = new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
+
+                    mainForm.AppendLog($"[INFO] Saved {positionEditor.Positions.Count} position splits to config");
+                    
+                    // Reload config
+                    ReloadConfig();
+                }
+            }
+            catch (Exception ex)
+            {
+                mainForm.AppendLog($"[ERROR] Failed to edit positions: {ex.Message}");
+                MessageBox.Show($"Failed to edit positions: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        static void MonitorGameLoop()
+        {
+            mainForm.AppendLog("[INFO] Starting game monitor...");
+            mainForm.UpdateStatus("Waiting for Elden Ring...", System.Drawing.Color.Yellow);
+
+            var er = new EldenRing();
+            var seenFlags = new HashSet<uint>();
+            var lastFireByToken = new Dictionary<string, DateTime>();
+            var wasInsideByToken = new Dictionary<string, bool>();
+
+            bool wasAttached = false;
+            bool prevGameStarts = false;
+
+            while (true)
+            {
+                try
+                {
+                    var rr = er.TryRefresh();
+
+                    bool attached = rr.IsOk && er.IsPlayerLoaded();
+                    if (attached && !wasAttached)
+                    {
+                        mainForm.AppendLog("[INFO] Player is in game");
+                        mainForm.UpdateStatus("In Game - Monitoring", System.Drawing.Color.LightGreen);
+                    }
+                    else if (!attached && wasAttached)
+                    {
+                        mainForm.AppendLog("[INFO] Waiting for player to enter the game...");
+                        mainForm.UpdateStatus("Game Running - Waiting for player", System.Drawing.Color.Yellow);
+                    }
+                    wasAttached = attached;
+
+                    if (attached)
+                    {
+                        // Reset on new run
+                        bool gameStarts = er.ReadEventFlag((uint)KnownFlag.GameStarts);
+                        if (gameStarts && !prevGameStarts)
+                        {
+                            mainForm.AppendLog("[RESET] Fresh run detected - Cleaning logs");
+                            SafeTruncateLogs();
+                            seenFlags.Clear();
+                            lastFireByToken.Clear();
+                            wasInsideByToken.Clear();
+                        }
+                        prevGameStarts = gameStarts;
+
+                        // Event flags
+                        foreach (var flagConfig in config.EventFlags)
+                        {
+                            uint flag = flagConfig.Flag;
+                            string token = flagConfig.Token;
+
+                            bool isSet = er.ReadEventFlag(flag);
+                            if (!isSet) continue;
+
+                            if (!seenFlags.Contains(flag))
+                            {
+                                var last = lastFireByToken.TryGetValue(token, out var t) ? t : DateTime.MinValue;
+                                if ((DateTime.UtcNow - last).TotalMilliseconds > config.Settings.DebounceMs)
+                                {
+                                    AppendSignal(new EventLine
+                                    {
+                                        ts = DateTime.UtcNow,
+                                        token = token,
+                                        flag = flag
+                                    });
+                                    lastFireByToken[token] = DateTime.UtcNow;
+
+                                    mainForm.AppendLog($"[TRIGGER] {token} (flag {flag})");
+                                }
+
+                                seenFlags.Add(flag);
+                            }
+                        }
+
+                        // Position splits
+                        if (er.GetScreenState() == ScreenState.InGame && !er.IsBlackscreenActive())
+                        {
+                            var pos = er.GetPosition();
+
+                            foreach (var ps in config.PositionSplits)
+                            {
+                                bool inside = ps.IsInside(pos);
+                                bool wasInside = wasInsideByToken.TryGetValue(ps.Token, out var w) && w;
+
+                                if (inside && !wasInside)
+                                {
+                                    var last = lastFireByToken.TryGetValue(ps.Token, out var t) ? t : DateTime.MinValue;
+                                    if ((DateTime.UtcNow - last).TotalMilliseconds > config.Settings.DebounceMs)
+                                    {
+                                        AppendSignal(new EventLine
+                                        {
+                                            ts = DateTime.UtcNow,
+                                            token = ps.Token,
+                                            flag = 0
+                                        });
+
+                                        lastFireByToken[ps.Token] = DateTime.UtcNow;
+                                        mainForm.AppendLog($"[TRIGGER] {ps.Token} at ({pos.X:F1}, {pos.Y:F1}, {pos.Z:F1})");
+                                    }
+                                }
+
+                                wasInsideByToken[ps.Token] = inside;
+                            }
+                        }
+                    }
+
+                    Thread.Sleep(config.Settings.PollIntervalMs);
+                }
+                catch (Exception ex)
+                {
+                    mainForm.AppendLog($"[ERROR] {ex.Message}");
+                    Thread.Sleep(1000);
+                }
+            }
+        }
+
+        static void AppendSignal(EventLine ev)
+        {
+            var json = JsonSerializer.Serialize(ev);
+            File.AppendAllText(SignalFile, json + Environment.NewLine);
+            File.WriteAllText(LatestSignalFile, json);
+        }
+
+        static void SafeTruncateLogs()
+        {
+            File.WriteAllText(SignalFile, string.Empty);
+            File.WriteAllText(LatestSignalFile, "{}");
+        }
+
+        record EventLine
+        {
+            public DateTime ts { get; init; }
+            public string token { get; init; } = "";
+            public uint flag { get; init; }
+        }
+
+        record Config
+        {
+            [JsonPropertyName("settings")]
+            public Settings Settings { get; init; } = new();
+            
+            [JsonPropertyName("eventFlags")]
+            public List<EventFlagConfig> EventFlags { get; init; } = new();
+            
+            [JsonPropertyName("positionSplits")]
+            public List<PosSplitConfig> PositionSplits { get; init; } = new();
+        }
+
+        record Settings
+        {
+            [JsonPropertyName("pollIntervalMs")]
+            public int PollIntervalMs { get; init; } = 200;
+            
+            [JsonPropertyName("debounceMs")]
+            public int DebounceMs { get; init; } = 6000;
+            
+            [JsonPropertyName("logsPath")]
+            public string LogsPath { get; init; } = @"F:\Speedrun\livesplit\Components\EldenRingWatcher\logs";
+        }
+
+        record EventFlagConfig
+        {
+            [JsonPropertyName("flag")]
+            public uint Flag { get; init; }
+            
+            [JsonPropertyName("token")]
+            public string Token { get; init; } = "";
+        }
+
+        record PosSplitConfig
+        {
+            [JsonPropertyName("token")]
+            public string Token { get; init; } = "";
+            
+            [JsonPropertyName("map")]
+            public string Map { get; init; } = "";
+            
+            [JsonPropertyName("x")]
+            public float X { get; init; }
+            
+            [JsonPropertyName("y")]
+            public float Y { get; init; }
+            
+            [JsonPropertyName("z")]
+            public float Z { get; init; }
+            
+            [JsonPropertyName("radius")]
+            public float Radius { get; init; }
+
+            public bool IsInside(Position p)
+            {
+                var (a, b, r, s) = ParseMap(Map);
+                if (!MapEquals(p, a, b, r, s)) return false;
+                return Dist3D(p, X, Y, Z) <= Radius;
+            }
+        }
+
+        static (byte area, byte block, byte region, byte size) ParseMap(string m)
+        {
+            var s = m.AsSpan();
+            if (s.Length != 12 || s[0] != 'm' || s[3] != '_' || s[6] != '_' || s[9] != '_')
+                throw new ArgumentException($"Invalid map format: {m}");
+
+            byte a = Convert.ToByte(s.Slice(1, 2).ToString(), 16);
+            byte b = Convert.ToByte(s.Slice(4, 2).ToString(), 16);
+            byte r = Convert.ToByte(s.Slice(7, 2).ToString(), 16);
+            byte z = Convert.ToByte(s.Slice(10, 2).ToString(), 16);
+            return (a, b, r, z);
+        }
+
+        static bool MapEquals(Position p, byte a, byte b, byte r, byte s)
+            => p.Area == a && p.Block == b && p.Region == r && p.Size == s;
+
+        static double Dist3D(Position p, float x, float y, float z)
+        {
+            double dx = p.X - x, dy = p.Y - y, dz = p.Z - z;
+            return Math.Sqrt(dx * dx + dy * dy + dz * dz);
+        }
+    }
+}

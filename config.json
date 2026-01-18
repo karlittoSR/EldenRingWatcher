@@ -1,0 +1,38 @@
+{
+  "settings": {
+    "pollIntervalMs": 200,
+    "debounceMs": 6000,
+    "logsPath": "F:\\Speedrun\\livesplit\\Components\\EldenRingWatcher\\logs"
+  },
+  "eventFlags": [
+    { "flag": 11007420, "token": "EXALTED_FLESH" },
+    { "flag": 16007210, "token": "SOMBER" },
+    { "flag": 32087020, "token": "RUNE" },
+    { "flag": 1049377110, "token": "DEATHPOKER" },
+    { "flag": 1034457100, "token": "KEY" },
+    { "flag": 510290, "token": "GIRANDOLE" },
+    { "flag": 1038517050, "token": "RST" },
+    { "flag": 172, "token": "RADAHN" },
+    { "flag": 171, "token": "GODRICK" },
+    { "flag": 400175, "token": "ALEX" },
+    { "flag": 400001, "token": "ROLD" },
+    { "flag": 34147020, "token": "FIRETALISMAN" },
+    { "flag": 400358, "token": "RAPIER" },
+    { "flag": 1050387020, "token": "LARMEDEVIE" },
+    { "flag": 711240, "token": "ENDSONG" }
+  ],
+  "positionSplits": [
+    { "token": "POS_LeyndellBalcon1Start", "map": "m0b_00_00_00", "x": -0.277, "y": 6.094, "z": -43.115, "radius": 3.0 },
+    { "token": "POS_LeyndellBalcon1End", "map": "m0b_00_00_00", "x": -89.801, "y": -45.485, "z": -128.275, "radius": 3.0 },
+    { "token": "POS_LeyndellBridgeStart", "map": "m0b_00_00_00", "x": -193.636, "y": -36.385, "z": -315.136, "radius": 3.0 },
+    { "token": "POS_LeyndellBridgeEnd", "map": "m0b_00_00_00", "x": -224.872, "y": -36.879, "z": -377.149, "radius": 3.0 },
+    { "token": "POS_LeyndellBalcon2Start", "map": "m0b_00_00_00", "x": -42.537, "y": 8.015, "z": -77.464, "radius": 3.0 },
+    { "token": "POS_LeyndellBalcon2End", "map": "m0b_00_00_00", "x": -45.371, "y": -45.485, "z": -114.907, "radius": 3.0 },
+    { "token": "POS_BridgeON", "map": "m0d_00_00_00", "x": 115.910, "y": -125.147, "z": 633.112, "radius": 3.0 },
+    { "token": "POS_BridgeOFF", "map": "m0d_00_00_00", "x": 72.777, "y": -65.985, "z": 589.432, "radius": 3.0 },
+    { "token": "POS_Gideon", "map": "m0b_05_00_00", "x": -196.440, "y": -2.292, "z": -350.239, "radius": 3.0 },
+    { "token": "POS_Gideoff", "map": "m0b_05_00_00", "x": -128.506, "y": 41.811, "z": -344.744, "radius": 3.0 },
+    { "token": "POS_RayaON", "map": "m0e_00_00_00", "x": -7.147, "y": 50.015, "z": -11.810, "radius": 3.0 },
+    { "token": "POS_RayaOFF", "map": "m10_00_00_00", "x": -103.256, "y": -45.763, "z": -215.862, "radius": 3.0 }
+  ]
+}
