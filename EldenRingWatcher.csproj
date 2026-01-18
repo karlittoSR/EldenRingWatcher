@@ -19,6 +19,12 @@
     <Company>karlitto__</Company>
     <Copyright>Copyright © 2026</Copyright>
     <Description>Monitors Elden Ring event flags and player positions for speedrunning</Description>
+    
+    <!-- Single File Publishing -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
