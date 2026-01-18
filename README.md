@@ -1,6 +1,6 @@
 # Elden Ring Watcher
 
-A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags and player positions to automatically log game state changes for streaming integration and run analysis.
+A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags and player positions to automatically log game state changes for streaming integration and run analysis. Included with FPS Patch positions of the Death's Poker AnyM Glitchless route as an example.
 
 ## Features
 
@@ -131,7 +131,6 @@ Free to use and distribute. Created for the speedrunning community.
 
 - Built with C# and Windows Forms
 - Uses SoulMemory library for game memory access
-- Icon created by karlitto__
 
 ---
 
