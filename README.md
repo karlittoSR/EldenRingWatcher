@@ -7,6 +7,9 @@ A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags
 - **Real-time Event Monitoring**: Tracks Elden Ring event flags (boss defeats, item pickups, key moments)
 - **Position Tracking**: Monitors player position changes to detect location-based milestones
 - **GET POSITION Button**: Automatically capture current player position with one click - retrieves map ID, X/Y/Z coordinates, and auto-fills form fields
+- **Drag & Drop Reordering**: Reorder flags and positions by dragging rows in the editor windows
+- **Toast Notifications**: Non-intrusive status messages for user feedback
+- **Auto-save Configuration**: Settings automatically save when closing dialogs
 - **Automatic Logging**: Outputs events to two files for integration with streaming tools:
   - `events.txt` - Complete history of all triggered events
   - `latest.json` - Latest event (ideal for file watchers like streamer.bot)
@@ -143,11 +146,19 @@ Free to use and distribute. Created for the speedrunning community.
 
 ---
 
-**Version**: 3.6.0  
+**Version**: 3.6.1  
 **Last Updated**: January 18, 2026
 
-### Changelog - v3.6.0
-- ✨ **NEW**: GET POSITION button to capture player coordinates with one click
+### Changelog
+
+**v3.6.1 - Quality of Life Improvements**
+- ✨ **Toast Notifications**: Non-intrusive status messages replace message boxes
+- ✨ **Auto-save Config**: Settings save automatically when closing dialogs (no manual reload needed)
+- ✨ **Drag & Drop Reordering**: Drag rows in flag and position lists to reorder entries
+- 🔧 Code refactoring to reduce duplication
+
+**v3.6.0 - Position Capture**
+- ✨ GET POSITION button to capture player coordinates with one click
 - ✨ Auto-population of map ID, X/Y/Z coordinates in position editor
 - 🛠️ Enhanced validation for position capture (game attached, player loaded, in-game state, no blackscreen)
-- 🔧 Code organization improvements with developing branch for feature development
+- 🔧 Single-file publishing configuration
