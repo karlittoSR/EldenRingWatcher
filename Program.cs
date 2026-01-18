@@ -26,8 +26,10 @@ namespace EldenRingWatcher
 
             mainForm = new MainForm();
             
+            // Set main form reference for toast notifications
+            ToastNotification.SetMainForm(mainForm);
+            
             // Setup button actions
-            mainForm.SetReloadAction(ReloadConfig);
             mainForm.SetClearLogsAction(ClearLogs);
             mainForm.SetEditConfigAction(EditConfig);
             mainForm.SetSetFlagAction(SetFlag);
@@ -235,19 +237,8 @@ namespace EldenRingWatcher
                         }).ToList()
                     };
 
-                    // Save to file
-                    string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    };
-                    File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
-
+                    SaveConfigToFile(newConfig);
                     mainForm.AppendLog($"[INFO] Saved {flagEditor.Flags.Count} event flags to config");
-                    
-                    // Reload config
-                    ReloadConfig();
                 }
             }
             catch (Exception ex)
@@ -292,19 +283,8 @@ namespace EldenRingWatcher
                         }).ToList()
                     };
 
-                    // Save to file
-                    string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
-                    var options = new JsonSerializerOptions
-                    {
-                        WriteIndented = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    };
-                    File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
-
+                    SaveConfigToFile(newConfig);
                     mainForm.AppendLog($"[INFO] Saved {positionEditor.Positions.Count} position splits to config");
-                    
-                    // Reload config
-                    ReloadConfig();
                 }
             }
             catch (Exception ex)
@@ -510,6 +490,26 @@ namespace EldenRingWatcher
                 var (a, b, r, s) = ParseMap(Map);
                 if (!MapEquals(p, a, b, r, s)) return false;
                 return Dist3D(p, X, Y, Z) <= Radius;
+            }
+        }
+
+        static void SaveConfigToFile(Config newConfig)
+        {
+            try
+            {
+                string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+                File.WriteAllText(configPath, JsonSerializer.Serialize(newConfig, options));
+                config = newConfig;
+                ReloadConfig();
+            }
+            catch (Exception ex)
+            {
+                mainForm.AppendLog($"[ERROR] Failed to save config: {ex.Message}");
             }
         }
 

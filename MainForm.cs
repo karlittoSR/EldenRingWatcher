@@ -10,7 +10,6 @@ namespace EldenRingWatcher
         private TextBox logTextBox = null!;
         private Label statusLabel = null!;
         private Label configLabel = null!;
-        private Button reloadButton = null!;
         private Button clearLogsButton = null!;
         private Button editConfigButton = null!;
         private Button setFlagButton = null!;
@@ -138,23 +137,10 @@ namespace EldenRingWatcher
                 AutoScroll = false
             };
 
-            reloadButton = new Button
-            {
-                Text = "Reload Config",
-                Location = new Point(10, 10),
-                Size = new Size(120, 30),
-                BackColor = Color.FromArgb(60, 60, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            reloadButton.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-            toolTip.SetToolTip(reloadButton, "Reload configuration manually if any change has been made to config.json");
-
             clearLogsButton = new Button
             {
                 Text = "Clear Logs",
-                Location = new Point(140, 10),
+                Location = new Point(10, 10),
                 Size = new Size(120, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -167,7 +153,7 @@ namespace EldenRingWatcher
             editConfigButton = new Button
             {
                 Text = "Set Config",
-                Location = new Point(270, 10),
+                Location = new Point(140, 10),
                 Size = new Size(120, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -180,7 +166,7 @@ namespace EldenRingWatcher
             setFlagButton = new Button
             {
                 Text = "Set Flag",
-                Location = new Point(400, 10),
+                Location = new Point(270, 10),
                 Size = new Size(120, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -193,7 +179,7 @@ namespace EldenRingWatcher
             setPositionButton = new Button
             {
                 Text = "Set Position",
-                Location = new Point(530, 10),
+                Location = new Point(400, 10),
                 Size = new Size(120, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -203,7 +189,6 @@ namespace EldenRingWatcher
             setPositionButton.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
             toolTip.SetToolTip(setPositionButton, "Add, edit, or delete position-based flags");
 
-            buttonPanel.Controls.Add(reloadButton);
             buttonPanel.Controls.Add(clearLogsButton);
             buttonPanel.Controls.Add(editConfigButton);
             buttonPanel.Controls.Add(setFlagButton);
@@ -270,11 +255,6 @@ namespace EldenRingWatcher
             }
 
             configLabel.Text = $"Configuration: {configInfo}";
-        }
-
-        public void SetReloadAction(Action action)
-        {
-            reloadButton.Click += (s, e) => action();
         }
 
         public void SetClearLogsAction(Action action)

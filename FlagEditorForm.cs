@@ -14,6 +14,7 @@ namespace EldenRingWatcher
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<FlagEntry> flags = new();
+        private int? draggedRowIndex = null;  // For drag & drop reordering
 
         public class FlagEntry
         {
@@ -121,11 +122,19 @@ namespace EldenRingWatcher
                 EnableHeadersVisualStyles = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
+                AllowUserToResizeRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+
+            // Enable drag & drop for row reordering
+            flagsGrid.AllowDrop = true;
+            flagsGrid.MouseDown += FlagsGrid_MouseDown;
+            flagsGrid.DragOver += FlagsGrid_DragOver;
+            flagsGrid.DragDrop += FlagsGrid_DragDrop;
+            flagsGrid.DragLeave += FlagsGrid_DragLeave;
 
             contentPanel.Controls.Add(flagsGrid);
 
@@ -233,6 +242,58 @@ namespace EldenRingWatcher
             }
         }
 
+        private void FlagsGrid_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                var hitTest = flagsGrid.HitTest(e.X, e.Y);
+                if (hitTest.RowIndex >= 0)
+                {
+                    draggedRowIndex = hitTest.RowIndex;
+                    flagsGrid.DoDragDrop(draggedRowIndex, DragDropEffects.Move);
+                }
+            }
+        }
+
+        private void FlagsGrid_DragOver(object? sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
+            
+            var hitTest = flagsGrid.HitTest(flagsGrid.PointToClient(new Point(e.X, e.Y)).X,
+                                            flagsGrid.PointToClient(new Point(e.X, e.Y)).Y);
+            if (hitTest.RowIndex >= 0)
+            {
+                flagsGrid.Rows[hitTest.RowIndex].Selected = true;
+            }
+        }
+
+        private void FlagsGrid_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (draggedRowIndex == null) return;
+
+            var dropPoint = flagsGrid.PointToClient(new Point(e.X, e.Y));
+            var hitTest = flagsGrid.HitTest(dropPoint.X, dropPoint.Y);
+            
+            if (hitTest.RowIndex >= 0 && hitTest.RowIndex != draggedRowIndex)
+            {
+                // Swap flags in list
+                var draggedFlag = flags[draggedRowIndex.Value];
+                flags.RemoveAt(draggedRowIndex.Value);
+                flags.Insert(hitTest.RowIndex, draggedFlag);
+                
+                RefreshGrid();
+                flagsGrid.Rows[hitTest.RowIndex].Selected = true;
+                ToastNotification.Show("Flag reordered", ToastNotification.NotificationType.Success, 1500);
+            }
+            
+            draggedRowIndex = null;
+        }
+
+        private void FlagsGrid_DragLeave(object? sender, EventArgs e)
+        {
+            draggedRowIndex = null;
+        }
+
         private void AddButton_Click(object? sender, EventArgs e)
         {
             using var addDialog = new AddFlagDialog();
@@ -252,8 +313,7 @@ namespace EldenRingWatcher
         {
             if (flagsGrid.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a flag to delete.", "No Selection", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show("Please select a flag to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
@@ -270,6 +330,7 @@ namespace EldenRingWatcher
             {
                 flags.RemoveAt(selectedIndex);
                 RefreshGrid();
+                ToastNotification.Show($"Flag deleted: {flag.Token}", ToastNotification.NotificationType.Success);
             }
         }
 
@@ -423,15 +484,13 @@ namespace EldenRingWatcher
         {
             if (!uint.TryParse(flagIdTextBox.Text, out uint flagId))
             {
-                MessageBox.Show("Please enter a valid numeric flag ID.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid numeric flag ID.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(tokenTextBox.Text))
             {
-                MessageBox.Show("Please enter a token name.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a token name.", ToastNotification.NotificationType.Warning);
                 return;
             }
 

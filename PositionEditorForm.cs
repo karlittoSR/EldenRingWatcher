@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using SoulMemory;
+using SoulMemory.EldenRing;
 
 namespace EldenRingWatcher
 {
@@ -14,6 +16,7 @@ namespace EldenRingWatcher
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<PositionEntry> positions = new();
+        private int? draggedRowIndex = null;  // For drag & drop reordering
 
         public class PositionEntry
         {
@@ -125,11 +128,19 @@ namespace EldenRingWatcher
                 EnableHeadersVisualStyles = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
+                AllowUserToResizeRows = false,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+
+            // Enable drag & drop for row reordering
+            positionsGrid.AllowDrop = true;
+            positionsGrid.MouseDown += PositionsGrid_MouseDown;
+            positionsGrid.DragOver += PositionsGrid_DragOver;
+            positionsGrid.DragDrop += PositionsGrid_DragDrop;
+            positionsGrid.DragLeave += PositionsGrid_DragLeave;
 
             contentPanel.Controls.Add(positionsGrid);
 
@@ -269,6 +280,58 @@ namespace EldenRingWatcher
             }
         }
 
+        private void PositionsGrid_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                var hitTest = positionsGrid.HitTest(e.X, e.Y);
+                if (hitTest.RowIndex >= 0)
+                {
+                    draggedRowIndex = hitTest.RowIndex;
+                    positionsGrid.DoDragDrop(draggedRowIndex, DragDropEffects.Move);
+                }
+            }
+        }
+
+        private void PositionsGrid_DragOver(object? sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
+            
+            var hitTest = positionsGrid.HitTest(positionsGrid.PointToClient(new Point(e.X, e.Y)).X,
+                                               positionsGrid.PointToClient(new Point(e.X, e.Y)).Y);
+            if (hitTest.RowIndex >= 0)
+            {
+                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
+            }
+        }
+
+        private void PositionsGrid_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (draggedRowIndex == null) return;
+
+            var dropPoint = positionsGrid.PointToClient(new Point(e.X, e.Y));
+            var hitTest = positionsGrid.HitTest(dropPoint.X, dropPoint.Y);
+            
+            if (hitTest.RowIndex >= 0 && hitTest.RowIndex != draggedRowIndex)
+            {
+                // Swap positions in list
+                var draggedPos = positions[draggedRowIndex.Value];
+                positions.RemoveAt(draggedRowIndex.Value);
+                positions.Insert(hitTest.RowIndex, draggedPos);
+                
+                RefreshGrid();
+                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
+                ToastNotification.Show("Position reordered", ToastNotification.NotificationType.Success, 1500);
+            }
+            
+            draggedRowIndex = null;
+        }
+
+        private void PositionsGrid_DragLeave(object? sender, EventArgs e)
+        {
+            draggedRowIndex = null;
+        }
+
         private void AddButton_Click(object? sender, EventArgs e)
         {
             using var addDialog = new AddPositionDialog();
@@ -292,8 +355,7 @@ namespace EldenRingWatcher
         {
             if (positionsGrid.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a position to delete.", "No Selection",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show("Please select a position to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
@@ -310,6 +372,7 @@ namespace EldenRingWatcher
             {
                 positions.RemoveAt(selectedIndex);
                 RefreshGrid();
+                ToastNotification.Show($"Position deleted: {pos.Token}", ToastNotification.NotificationType.Success);
             }
         }
 
@@ -359,6 +422,7 @@ namespace EldenRingWatcher
         private TextBox yTextBox = null!;
         private TextBox zTextBox = null!;
         private TextBox radiusTextBox = null!;
+        private Button getPositionButton = null!;
         private Button okButton = null!;
         private Button cancelButton = null!;
 
@@ -377,7 +441,7 @@ namespace EldenRingWatcher
         private void InitializeComponents()
         {
             Text = "Add New Position Split";
-            Size = new Size(450, 350);
+            Size = new Size(450, 400);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -420,12 +484,32 @@ namespace EldenRingWatcher
             // Radius
             AddLabelAndTextBox("Radius:", ref radiusTextBox, ref yPos, labelX, textBoxX, textBoxWidth, spacing,
                 toolTip, "Detection radius around the position\n(must be greater than 0)");
+            
+            // Initialize radius with default value
+            radiusTextBox.Text = "3";
+
+            // GET POSITION Button
+            getPositionButton = new Button
+            {
+                Text = "GET POSITION",
+                Location = new Point(20, yPos + 10),
+                Size = new Size(400, 30),
+                BackColor = Color.FromArgb(0, 150, 200),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            getPositionButton.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 170);
+            getPositionButton.Click += GetPositionButton_Click;
+            toolTip.SetToolTip(getPositionButton, "Click to retrieve your current in-game position\n(Elden Ring must be running with player loaded)");
+            Controls.Add(getPositionButton);
 
             // OK Button
             okButton = new Button
             {
                 Text = "OK",
-                Location = new Point(240, yPos + 15),
+                Location = new Point(240, yPos + 50),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -439,7 +523,7 @@ namespace EldenRingWatcher
             cancelButton = new Button
             {
                 Text = "Cancel",
-                Location = new Point(330, yPos + 15),
+                Location = new Point(330, yPos + 50),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -489,47 +573,105 @@ namespace EldenRingWatcher
             yPos += spacing;
         }
 
+        private void GetPositionButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                getPositionButton.Enabled = false;
+                getPositionButton.Text = "Fetching position...";
+
+                var er = new EldenRing();
+                var refreshResult = er.TryRefresh();
+
+                if (!refreshResult.IsOk)
+                {
+                    ToastNotification.Show("Failed to connect to Elden Ring. Make sure the game is running.", ToastNotification.NotificationType.Error);
+                    return;
+                }
+
+                if (!er.IsPlayerLoaded())
+                {
+                    ToastNotification.Show("Player is not loaded. Please ensure your character is in-game.", ToastNotification.NotificationType.Warning);
+                    return;
+                }
+
+                if (er.GetScreenState() != ScreenState.InGame)
+                {
+                    ToastNotification.Show("You are not in-game. Please exit menus and be in the game world.", ToastNotification.NotificationType.Warning);
+                    return;
+                }
+
+                if (er.IsBlackscreenActive())
+                {
+                    ToastNotification.Show("Blackscreen is active. Please wait for the game to fully load.", ToastNotification.NotificationType.Warning);
+                    return;
+                }
+
+                var pos = er.GetPosition();
+
+                // Format map ID from position components
+                string mapId = $"m{pos.Area:x2}_{pos.Block:x2}_{pos.Region:x2}_{pos.Size:x2}";
+                
+                // Populate fields with current position
+                mapTextBox.Text = mapId;
+                xTextBox.Text = pos.X.ToString("F3");
+                yTextBox.Text = pos.Y.ToString("F3");
+                zTextBox.Text = pos.Z.ToString("F3");
+                
+                // Set radius to 3 if not already set
+                if (string.IsNullOrWhiteSpace(radiusTextBox.Text) || radiusTextBox.Text == "0")
+                {
+                    radiusTextBox.Text = "3";
+                }
+
+                ToastNotification.Show($"Position retrieved: {mapId}", ToastNotification.NotificationType.Success, 2000);
+            }
+            catch (Exception ex)
+            {
+                ToastNotification.Show($"Error retrieving position: {ex.Message}", ToastNotification.NotificationType.Error);
+            }
+            finally
+            {
+                getPositionButton.Enabled = true;
+                getPositionButton.Text = "GET POSITION";
+            }
+        }
+
         private void OkButton_Click(object? sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(tokenTextBox.Text))
             {
-                MessageBox.Show("Please enter a token name.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a token name.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(mapTextBox.Text))
             {
-                MessageBox.Show("Please enter a map ID.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a map ID.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(xTextBox.Text, out float x))
             {
-                MessageBox.Show("Please enter a valid X position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid X position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(yTextBox.Text, out float y))
             {
-                MessageBox.Show("Please enter a valid Y position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid Y position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(zTextBox.Text, out float z))
             {
-                MessageBox.Show("Please enter a valid Z position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid Z position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(radiusTextBox.Text, out float radius) || radius <= 0)
             {
-                MessageBox.Show("Please enter a valid radius (must be greater than 0).", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid radius (must be greater than 0).", ToastNotification.NotificationType.Warning);
                 return;
             }
 
