@@ -14,15 +14,19 @@ A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags
 
 ## Installation
 
-1. Download `EldenRingWatcher.exe` from [Releases](https://github.com/karlitto/EldenRingWatcher/releases)
+1. Download `EldenRingWatcher.exe` from [Releases](https://github.com/karlittoSR/EldenRingWatcher/releases)
 2. Place it in your desired folder (e.g., `C:\Games\EldenRingWatcher\`)
-3. A `config.json` file will be created automatically on first run
+3. Run it - a default `config.json` will be created automatically on first run
+4. Customize the configuration as needed using the UI or by editing config.json directly
 
 ## Usage
 
 ### Running the Application
 
-Simply double-click `EldenRingWatcher.exe`. The monitoring window will appear and start tracking game state in real-time.
+Simply double-click `EldenRingWatcher.exe`. 
+- On first run, a default `config.json` will be created in the same folder with example event flags and position splits
+- A `logs/` folder will be created for output files (events.txt and latest.json)
+- The monitoring window will appear and start tracking game state in real-time
 
 ### Main Interface
 
@@ -64,7 +68,7 @@ Edit `config.json` to customize monitoring behavior:
 **Parameters**:
 - `pollIntervalMs`: Lower values = more responsive but higher CPU usage (recommended: 100-500ms)
 - `debounceMs`: Prevents duplicate events from same flag within this time window
-- `logsPath`: Absolute path where `events.txt` and `latest.json` are written
+- `logsPath`: Path where `events.txt` and `latest.json` are written (default: `./logs` - relative to app folder)
 - `eventFlags`: Elden Ring flag IDs (use SoulMemory library documentation for reference)
 - `positionSplits`: Location-based triggers with map coordinates and detection radius
 
@@ -131,6 +135,6 @@ Free to use and distribute. Created for the speedrunning community.
 
 ---
 
-**Version**: 3.5.1  
+**Version**: 3.5.3  
 **Author**: karlitto__  
 **Last Updated**: January 18, 2026
