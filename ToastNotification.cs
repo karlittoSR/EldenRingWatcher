@@ -6,6 +6,7 @@ namespace EldenRingWatcher
 {
     /// <summary>
     /// Non-intrusive toast notification system for status messages
+    /// Positions relative to main application window
     /// </summary>
     public static class ToastNotification
     {
@@ -18,6 +19,15 @@ namespace EldenRingWatcher
         }
 
         private static Form? _currentToast;
+        private static Form? _mainForm;
+
+        /// <summary>
+        /// Set the main form reference for positioning toasts relative to it
+        /// </summary>
+        public static void SetMainForm(Form mainForm)
+        {
+            _mainForm = mainForm;
+        }
 
         /// <summary>
         /// Show a toast notification that auto-dismisses after specified duration
@@ -27,6 +37,11 @@ namespace EldenRingWatcher
             // Close any existing toast
             _currentToast?.Invoke(new Action(() => _currentToast?.Close()));
 
+            // Calculate dimensions with padding for text wrapping
+            const int maxWidth = 300;
+            const int minHeight = 60;
+            const int padding = 15;
+
             var toastForm = new Form
             {
                 FormBorderStyle = FormBorderStyle.None,
@@ -35,19 +50,11 @@ namespace EldenRingWatcher
                 StartPosition = FormStartPosition.Manual,
                 ShowInTaskbar = false,
                 TopMost = true,
-                Width = 350,
-                Height = 60,
-                Padding = new Padding(15)
+                Padding = new Padding(padding),
+                AutoSize = false
             };
 
-            // Position at bottom-right of screen
-            var screen = Screen.PrimaryScreen ?? throw new InvalidOperationException("No primary screen found");
-            toastForm.Location = new Point(
-                screen.WorkingArea.Right - toastForm.Width - 20,
-                screen.WorkingArea.Bottom - toastForm.Height - 20
-            );
-
-            // Create label for message
+            // Create label for message with text wrapping
             var label = new Label
             {
                 Text = message,
@@ -55,10 +62,38 @@ namespace EldenRingWatcher
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular)
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                Margin = new Padding(0)
             };
 
+            // Measure text to determine label size
+            using (var g = toastForm.CreateGraphics())
+            {
+                var textSize = g.MeasureString(message, label.Font, maxWidth - (padding * 2));
+                label.Width = maxWidth;
+                label.Height = Math.Max((int)textSize.Height + (padding * 2), minHeight - (padding * 2));
+            }
+
+            toastForm.Width = maxWidth;
+            toastForm.Height = label.Height + (padding * 2);
             toastForm.Controls.Add(label);
+
+            // Position at bottom-right of main form, or screen if no main form
+            if (_mainForm != null && _mainForm.Visible)
+            {
+                toastForm.Location = new Point(
+                    _mainForm.Right - toastForm.Width - 20,
+                    _mainForm.Bottom - toastForm.Height - 20
+                );
+            }
+            else
+            {
+                var screen = Screen.PrimaryScreen ?? throw new InvalidOperationException("No primary screen found");
+                toastForm.Location = new Point(
+                    screen.WorkingArea.Right - toastForm.Width - 20,
+                    screen.WorkingArea.Bottom - toastForm.Height - 20
+                );
+            }
 
             // Show toast
             _currentToast = toastForm;

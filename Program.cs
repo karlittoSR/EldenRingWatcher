@@ -26,8 +26,10 @@ namespace EldenRingWatcher
 
             mainForm = new MainForm();
             
+            // Set main form reference for toast notifications
+            ToastNotification.SetMainForm(mainForm);
+            
             // Setup button actions
-            mainForm.SetReloadAction(ReloadConfig);
             mainForm.SetClearLogsAction(ClearLogs);
             mainForm.SetEditConfigAction(EditConfig);
             mainForm.SetSetFlagAction(SetFlag);
