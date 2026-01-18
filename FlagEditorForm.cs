@@ -11,7 +11,6 @@ namespace EldenRingWatcher
         private DataGridView flagsGrid = null!;
         private Button addButton = null!;
         private Button deleteButton = null!;
-        private Button captureButton = null!;
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<FlagEntry> flags = new();
@@ -185,20 +184,6 @@ namespace EldenRingWatcher
             deleteButton.FlatAppearance.BorderColor = Color.FromArgb(160, 40, 40);
             deleteButton.Click += DeleteButton_Click;
 
-            captureButton = new Button
-            {
-                Text = "Capture Flag",
-                Location = new Point(245, 10),
-                Size = new Size(120, 30),
-                BackColor = Color.FromArgb(0, 120, 215),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left
-            };
-            captureButton.FlatAppearance.BorderColor = Color.FromArgb(0, 100, 195);
-            captureButton.Click += CaptureButton_Click;
-
             // Bottom row buttons (Save/Cancel)
             saveButton = new Button
             {
@@ -230,7 +215,6 @@ namespace EldenRingWatcher
 
             buttonPanel.Controls.Add(addButton);
             buttonPanel.Controls.Add(deleteButton);
-            buttonPanel.Controls.Add(captureButton);
             buttonPanel.Controls.Add(saveButton);
             buttonPanel.Controls.Add(cancelButton);
 
@@ -305,12 +289,6 @@ namespace EldenRingWatcher
                             Token = row.Cells[1].Value.ToString() ?? ""
                         });
                     }
-                }
-
-                private void CaptureButton_Click(object? sender, EventArgs e)
-                {
-                    using var captureDialog = new FlagCaptureDialog();
-                    captureDialog.ShowDialog();
                 }
             }
 
@@ -467,227 +445,6 @@ namespace EldenRingWatcher
         {
             DialogResult = DialogResult.Cancel;
             Close();
-        }
-    }
-
-    public class FlagCaptureDialog : Form
-    {
-        private readonly Label statusLabel = null!;
-        private readonly ListView resultsList = null!;
-        private readonly Button useButton = null!;
-        private readonly Button copyButton = null!;
-        private readonly Button closeButton = null!;
-        private readonly Timer countdownTimer = new() { Interval = 100 };
-        private readonly HashSet<uint> capturedFlags = new();
-        private DateTime captureEnd;
-        private bool captureActive;
-
-        public uint SelectedFlagId { get; private set; }
-
-        public FlagCaptureDialog()
-        {
-            InitializeComponents();
-            StartCapture();
-        }
-
-        private void InitializeComponents()
-        {
-            Text = "Capture Flag";
-            Size = new Size(520, 420);
-            StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            BackColor = Color.FromArgb(30, 30, 30);
-
-            var infoLabel = new Label
-            {
-                Text = "Trigger the in-game action now. Capturing flags for the next 5 seconds...",
-                Location = new Point(20, 15),
-                Size = new Size(480, 30),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9)
-            };
-
-            statusLabel = new Label
-            {
-                Text = "Preparing capture...",
-                Location = new Point(20, 45),
-                Size = new Size(480, 20),
-                ForeColor = Color.LightGray,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold)
-            };
-
-            resultsList = new ListView
-            {
-                Location = new Point(20, 70),
-                Size = new Size(480, 230),
-                View = View.Details,
-                FullRowSelect = true,
-                GridLines = true,
-                HeaderStyle = ColumnHeaderStyle.Nonclickable,
-                BackColor = Color.FromArgb(40, 40, 40),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            resultsList.Columns.Add("Flag ID", 120);
-            resultsList.Columns.Add("Token", 260);
-            resultsList.Columns.Add("Time", 100);
-            resultsList.SelectedIndexChanged += ResultsList_SelectedIndexChanged;
-
-            useButton = new Button
-            {
-                Text = "Use Selected",
-                Location = new Point(220, 320),
-                Size = new Size(110, 30),
-                BackColor = Color.FromArgb(0, 120, 215),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Enabled = false
-            };
-            useButton.FlatAppearance.BorderColor = Color.FromArgb(0, 100, 195);
-            useButton.Click += UseButton_Click;
-
-            copyButton = new Button
-            {
-                Text = "Copy Flag",
-                Location = new Point(340, 320),
-                Size = new Size(110, 30),
-                BackColor = Color.FromArgb(60, 60, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            copyButton.FlatAppearance.BorderColor = Color.FromArgb(90, 90, 90);
-            copyButton.Click += CopyButton_Click;
-
-            closeButton = new Button
-            {
-                Text = "Close",
-                Location = new Point(20, 320),
-                Size = new Size(110, 30),
-                BackColor = Color.FromArgb(60, 60, 60),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            closeButton.FlatAppearance.BorderColor = Color.FromArgb(90, 90, 90);
-            closeButton.Click += CloseButton_Click;
-
-            Controls.Add(infoLabel);
-            Controls.Add(statusLabel);
-            Controls.Add(resultsList);
-            Controls.Add(useButton);
-            Controls.Add(copyButton);
-            Controls.Add(closeButton);
-
-            countdownTimer.Tick += CountdownTimer_Tick;
-
-            AcceptButton = useButton;
-            CancelButton = closeButton;
-        }
-
-        private void StartCapture()
-        {
-            capturedFlags.Clear();
-            resultsList.Items.Clear();
-            SelectedFlagId = 0;
-            captureEnd = DateTime.UtcNow + TimeSpan.FromSeconds(5);
-            statusLabel.Text = "Capturing flags... 5.0s remaining";
-            useButton.Enabled = false;
-            captureActive = true;
-            Program.FlagTriggered += OnFlagTriggered;
-            countdownTimer.Start();
-        }
-
-        private void CountdownTimer_Tick(object? sender, EventArgs e)
-        {
-            var remaining = captureEnd - DateTime.UtcNow;
-            if (remaining <= TimeSpan.Zero)
-            {
-                StopCapture();
-                statusLabel.Text = "Capture window closed. Select an entry or copy a flag.";
-                return;
-            }
-
-            statusLabel.Text = $"Capturing flags... {remaining.TotalSeconds:F1}s remaining";
-        }
-
-        private void OnFlagTriggered(uint flag, string token)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action<uint, string>(OnFlagTriggered), flag, token);
-                return;
-            }
-
-            if (!capturedFlags.Add(flag))
-            {
-                return;
-            }
-
-            var item = new ListViewItem(flag.ToString());
-            item.SubItems.Add(token);
-            item.SubItems.Add(DateTime.Now.ToString("HH:mm:ss"));
-            resultsList.Items.Add(item);
-            item.Selected = true;
-            useButton.Enabled = true;
-        }
-
-        private void ResultsList_SelectedIndexChanged(object? sender, EventArgs e)
-        {
-            useButton.Enabled = resultsList.SelectedItems.Count > 0;
-        }
-
-        private void UseButton_Click(object? sender, EventArgs e)
-        {
-            if (resultsList.SelectedItems.Count == 0)
-            {
-                return;
-            }
-
-            if (uint.TryParse(resultsList.SelectedItems[0].Text, out var flag))
-            {
-                SelectedFlagId = flag;
-            }
-
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-
-        private void CopyButton_Click(object? sender, EventArgs e)
-        {
-            if (resultsList.SelectedItems.Count == 0)
-            {
-                return;
-            }
-
-            Clipboard.SetText(resultsList.SelectedItems[0].Text);
-        }
-
-        private void CloseButton_Click(object? sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;
-            Close();
-        }
-
-        private void StopCapture()
-        {
-            if (!captureActive)
-            {
-                return;
-            }
-
-            captureActive = false;
-            Program.FlagTriggered -= OnFlagTriggered;
-            countdownTimer.Stop();
-        }
-
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        {
-            StopCapture();
-            base.OnFormClosed(e);
         }
     }
 }
