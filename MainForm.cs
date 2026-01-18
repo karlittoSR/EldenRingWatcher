@@ -96,7 +96,7 @@ namespace EldenRingWatcher
             infoButton.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
             infoButton.Click += (s, e) =>
             {
-                Program.ShowMessageSilent(
+                MessageBox.Show(
                     $"ELDEN RING WATCHER v{GetVersion()}\n" +
                     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
                     "A real-time game monitoring tool for speedrunners.\n\n" +
@@ -108,7 +108,7 @@ namespace EldenRingWatcher
                     "• latest.json - Latest event (for file watchers like streamer.bot)\n\n" +
                     "Use this data to trigger automatic actions in your streaming setup.\n\n" +
                     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                    "© 2026\n" +
+                    "© 2026 by karlitto__\n" +
                     "Free to use and distribute",
                     "About Elden Ring Watcher",
                     MessageBoxButtons.OK,

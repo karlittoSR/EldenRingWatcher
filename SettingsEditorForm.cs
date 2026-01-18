@@ -192,21 +192,21 @@ namespace EldenRingWatcher
         {
             if (!int.TryParse(pollIntervalTextBox.Text, out int pollInterval) || pollInterval <= 0)
             {
-                Program.ShowMessageSilent("Please enter a valid poll interval (must be greater than 0).", "Invalid Input",
+                MessageBox.Show("Please enter a valid poll interval (must be greater than 0).", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!int.TryParse(debounceTextBox.Text, out int debounce) || debounce < 0)
             {
-                Program.ShowMessageSilent("Please enter a valid debounce value (must be 0 or greater).", "Invalid Input",
+                MessageBox.Show("Please enter a valid debounce value (must be 0 or greater).", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(logsPathTextBox.Text))
             {
-                Program.ShowMessageSilent("Please enter a logs path.", "Invalid Input",
+                MessageBox.Show("Please enter a logs path.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
