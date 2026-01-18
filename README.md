@@ -6,6 +6,7 @@ A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags
 
 - **Real-time Event Monitoring**: Tracks Elden Ring event flags (boss defeats, item pickups, key moments)
 - **Position Tracking**: Monitors player position changes to detect location-based milestones
+- **GET POSITION Button**: Automatically capture current player position with one click - retrieves map ID, X/Y/Z coordinates, and auto-fills form fields
 - **Automatic Logging**: Outputs events to two files for integration with streaming tools:
   - `events.txt` - Complete history of all triggered events
   - `latest.json` - Latest event (ideal for file watchers like streamer.bot)
@@ -34,8 +35,19 @@ Simply double-click `EldenRingWatcher.exe`.
 - **Clear Logs**: Clears the log display (doesn't delete output files)
 - **Set Config**: Opens settings editor for poll interval, debounce time, and log output path
 - **Set Flag**: Opens editor to add/remove/modify event flags to track
-- **Set Position**: Opens editor to add/remove/modify position-based milestones
+- **Set Position**: Opens editor to add/remove/modify position-based milestones with **GET POSITION** button
 - **ℹ️ Info**: Shows version and feature information
+
+#### GET POSITION Button
+
+The **GET POSITION** button in the Position Editor allows you to automatically capture your current in-game position:
+1. Click **GET POSITION** while your character is at the desired location
+2. The button validates that the game is running, your character is loaded, and you're in-game
+3. Your current position is instantly retrieved and populated:
+   - Map ID (formatted as m##_##_##_##)
+   - X, Y, Z coordinates (3 decimal precision)
+   - Radius automatically set to 3 (configurable)
+4. Click **OK** to confirm and add the position split
 
 ### Configuration
 
@@ -131,6 +143,11 @@ Free to use and distribute. Created for the speedrunning community.
 
 ---
 
-**Version**: 3.5.3  
-**Author**: karlitto__  
+**Version**: 3.6.0  
 **Last Updated**: January 18, 2026
+
+### Changelog - v3.6.0
+- ✨ **NEW**: GET POSITION button to capture player coordinates with one click
+- ✨ Auto-population of map ID, X/Y/Z coordinates in position editor
+- 🛠️ Enhanced validation for position capture (game attached, player loaded, in-game state, no blackscreen)
+- 🔧 Code organization improvements with developing branch for feature development

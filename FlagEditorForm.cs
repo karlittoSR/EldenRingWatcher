@@ -252,8 +252,7 @@ namespace EldenRingWatcher
         {
             if (flagsGrid.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a flag to delete.", "No Selection", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show("Please select a flag to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
@@ -270,6 +269,7 @@ namespace EldenRingWatcher
             {
                 flags.RemoveAt(selectedIndex);
                 RefreshGrid();
+                ToastNotification.Show($"Flag deleted: {flag.Token}", ToastNotification.NotificationType.Success);
             }
         }
 
@@ -423,15 +423,13 @@ namespace EldenRingWatcher
         {
             if (!uint.TryParse(flagIdTextBox.Text, out uint flagId))
             {
-                MessageBox.Show("Please enter a valid numeric flag ID.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid numeric flag ID.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(tokenTextBox.Text))
             {
-                MessageBox.Show("Please enter a token name.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a token name.", ToastNotification.NotificationType.Warning);
                 return;
             }
 

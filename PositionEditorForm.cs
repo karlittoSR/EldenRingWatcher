@@ -294,8 +294,7 @@ namespace EldenRingWatcher
         {
             if (positionsGrid.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a position to delete.", "No Selection",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show("Please select a position to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
@@ -312,6 +311,7 @@ namespace EldenRingWatcher
             {
                 positions.RemoveAt(selectedIndex);
                 RefreshGrid();
+                ToastNotification.Show($"Position deleted: {pos.Token}", ToastNotification.NotificationType.Success);
             }
         }
 
@@ -524,29 +524,25 @@ namespace EldenRingWatcher
 
                 if (!refreshResult.IsOk)
                 {
-                    MessageBox.Show("Failed to connect to Elden Ring. Make sure the game is running.",
-                        "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    ToastNotification.Show("Failed to connect to Elden Ring. Make sure the game is running.", ToastNotification.NotificationType.Error);
                     return;
                 }
 
                 if (!er.IsPlayerLoaded())
                 {
-                    MessageBox.Show("Player is not loaded. Please ensure your character is in-game (not on main menu).",
-                        "Player Not Loaded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ToastNotification.Show("Player is not loaded. Please ensure your character is in-game.", ToastNotification.NotificationType.Warning);
                     return;
                 }
 
                 if (er.GetScreenState() != ScreenState.InGame)
                 {
-                    MessageBox.Show("You are not in-game. Please exit menus and be in the game world.",
-                        "Not In-Game", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ToastNotification.Show("You are not in-game. Please exit menus and be in the game world.", ToastNotification.NotificationType.Warning);
                     return;
                 }
 
                 if (er.IsBlackscreenActive())
                 {
-                    MessageBox.Show("Blackscreen is active. Please wait for the game to fully load.",
-                        "Blackscreen Active", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    ToastNotification.Show("Blackscreen is active. Please wait for the game to fully load.", ToastNotification.NotificationType.Warning);
                     return;
                 }
 
@@ -567,13 +563,11 @@ namespace EldenRingWatcher
                     radiusTextBox.Text = "3";
                 }
 
-                MessageBox.Show($"Position retrieved successfully!\n\nMap: {mapId}\nX: {pos.X:F3}\nY: {pos.Y:F3}\nZ: {pos.Z:F3}",
-                    "Position Retrieved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show($"Position retrieved: {mapId}", ToastNotification.NotificationType.Success, 2000);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error retrieving position: {ex.Message}",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ToastNotification.Show($"Error retrieving position: {ex.Message}", ToastNotification.NotificationType.Error);
             }
             finally
             {
@@ -586,43 +580,37 @@ namespace EldenRingWatcher
         {
             if (string.IsNullOrWhiteSpace(tokenTextBox.Text))
             {
-                MessageBox.Show("Please enter a token name.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a token name.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(mapTextBox.Text))
             {
-                MessageBox.Show("Please enter a map ID.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a map ID.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(xTextBox.Text, out float x))
             {
-                MessageBox.Show("Please enter a valid X position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid X position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(yTextBox.Text, out float y))
             {
-                MessageBox.Show("Please enter a valid Y position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid Y position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(zTextBox.Text, out float z))
             {
-                MessageBox.Show("Please enter a valid Z position.", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid Z position.", ToastNotification.NotificationType.Warning);
                 return;
             }
 
             if (!float.TryParse(radiusTextBox.Text, out float radius) || radius <= 0)
             {
-                MessageBox.Show("Please enter a valid radius (must be greater than 0).", "Invalid Input",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ToastNotification.Show("Please enter a valid radius (must be greater than 0).", ToastNotification.NotificationType.Warning);
                 return;
             }
 
