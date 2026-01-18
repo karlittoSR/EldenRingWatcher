@@ -98,14 +98,11 @@ Configure a file watcher on `latest.json` to trigger actions (scene changes, sou
 ### OBS
 Use a script to read `events.txt` and display recent events as an overlay.
 
-### Live Split
-Parse events to automatically update splits based on game state.
-
 ## Requirements
 
 - Windows 10 or later (x64)
 - .NET Runtime 7.0 (included in the executable)
-- Elden Ring running on the same machine
+- Elden Ring running !
 
 ## Troubleshooting
 
