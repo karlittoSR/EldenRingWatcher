@@ -17,6 +17,7 @@ namespace EldenRingWatcher
         static string SignalFile = null!;
         static string LatestSignalFile = null!;
         static MainForm mainForm = null!;
+        public static event Action<uint, string>? FlagTriggered;
 
         [STAThread]
         static void Main()
@@ -384,6 +385,7 @@ namespace EldenRingWatcher
                                     lastFireByToken[token] = DateTime.UtcNow;
 
                                     mainForm.AppendLog($"[TRIGGER] {token} (flag {flag})");
+                                    FlagTriggered?.Invoke(flag, token);
                                 }
 
                                 seenFlags.Add(flag);
