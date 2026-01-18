@@ -18,6 +18,19 @@ namespace EldenRingWatcher
         static string LatestSignalFile = null!;
         static MainForm mainForm = null!;
 
+        // Helper method to show message boxes without system beep sound
+        public static DialogResult ShowMessageSilent(string message, string title, 
+            MessageBoxButtons buttons = MessageBoxButtons.OK, 
+            MessageBoxIcon icon = MessageBoxIcon.None)
+        {
+            try 
+            { 
+                System.Console.Beep(0, 0); 
+            } 
+            catch { }
+            return MessageBox.Show(message, title, buttons, icon);
+        }
+
         [STAThread]
         static void Main()
         {
@@ -36,7 +49,7 @@ namespace EldenRingWatcher
             // Load initial configuration
             if (!LoadConfiguration())
             {
-                MessageBox.Show("Failed to load configuration. Please check config.json.", 
+                ShowMessageSilent("Failed to load configuration. Please check config.json.", 
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -204,7 +217,7 @@ namespace EldenRingWatcher
             catch (Exception ex)
             {
                 mainForm.AppendLog($"[ERROR] Failed to edit settings: {ex.Message}");
-                MessageBox.Show($"Failed to edit settings: {ex.Message}", "Error", 
+                ShowMessageSilent($"Failed to edit settings: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -253,7 +266,7 @@ namespace EldenRingWatcher
             catch (Exception ex)
             {
                 mainForm.AppendLog($"[ERROR] Failed to edit flags: {ex.Message}");
-                MessageBox.Show($"Failed to edit flags: {ex.Message}", "Error", 
+                ShowMessageSilent($"Failed to edit flags: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -310,7 +323,7 @@ namespace EldenRingWatcher
             catch (Exception ex)
             {
                 mainForm.AppendLog($"[ERROR] Failed to edit positions: {ex.Message}");
-                MessageBox.Show($"Failed to edit positions: {ex.Message}", "Error", 
+                ShowMessageSilent($"Failed to edit positions: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

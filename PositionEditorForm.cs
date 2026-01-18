@@ -294,7 +294,7 @@ namespace EldenRingWatcher
         {
             if (positionsGrid.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select a position to delete.", "No Selection",
+                Program.ShowMessageSilent("Please select a position to delete.", "No Selection",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -302,7 +302,7 @@ namespace EldenRingWatcher
             var selectedIndex = positionsGrid.SelectedRows[0].Index;
             var pos = positions[selectedIndex];
 
-            var result = MessageBox.Show(
+            var result = Program.ShowMessageSilent(
                 $"Are you sure you want to delete position '{pos.Token}' on map {pos.Map}?",
                 "Confirm Delete",
                 MessageBoxButtons.YesNo,
@@ -524,28 +524,28 @@ namespace EldenRingWatcher
 
                 if (!refreshResult.IsOk)
                 {
-                    MessageBox.Show("Failed to connect to Elden Ring. Make sure the game is running.",
+                    Program.ShowMessageSilent("Failed to connect to Elden Ring. Make sure the game is running.",
                         "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 if (!er.IsPlayerLoaded())
                 {
-                    MessageBox.Show("Player is not loaded. Please ensure your character is in-game (not on main menu).",
+                    Program.ShowMessageSilent("Player is not loaded. Please ensure your character is in-game (not on main menu).",
                         "Player Not Loaded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (er.GetScreenState() != ScreenState.InGame)
                 {
-                    MessageBox.Show("You are not in-game. Please exit menus and be in the game world.",
+                    Program.ShowMessageSilent("You are not in-game. Please exit menus and be in the game world.",
                         "Not In-Game", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (er.IsBlackscreenActive())
                 {
-                    MessageBox.Show("Blackscreen is active. Please wait for the game to fully load.",
+                    Program.ShowMessageSilent("Blackscreen is active. Please wait for the game to fully load.",
                         "Blackscreen Active", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
@@ -567,12 +567,12 @@ namespace EldenRingWatcher
                     radiusTextBox.Text = "3";
                 }
 
-                MessageBox.Show($"Position retrieved successfully!\n\nMap: {mapId}\nX: {pos.X:F3}\nY: {pos.Y:F3}\nZ: {pos.Z:F3}",
+                Program.ShowMessageSilent($"Position retrieved successfully!\n\nMap: {mapId}\nX: {pos.X:F3}\nY: {pos.Y:F3}\nZ: {pos.Z:F3}",
                     "Position Retrieved", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error retrieving position: {ex.Message}",
+                Program.ShowMessageSilent($"Error retrieving position: {ex.Message}",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -586,42 +586,42 @@ namespace EldenRingWatcher
         {
             if (string.IsNullOrWhiteSpace(tokenTextBox.Text))
             {
-                MessageBox.Show("Please enter a token name.", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a token name.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(mapTextBox.Text))
             {
-                MessageBox.Show("Please enter a map ID.", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a map ID.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!float.TryParse(xTextBox.Text, out float x))
             {
-                MessageBox.Show("Please enter a valid X position.", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a valid X position.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!float.TryParse(yTextBox.Text, out float y))
             {
-                MessageBox.Show("Please enter a valid Y position.", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a valid Y position.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!float.TryParse(zTextBox.Text, out float z))
             {
-                MessageBox.Show("Please enter a valid Z position.", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a valid Z position.", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             if (!float.TryParse(radiusTextBox.Text, out float radius) || radius <= 0)
             {
-                MessageBox.Show("Please enter a valid radius (must be greater than 0).", "Invalid Input",
+                Program.ShowMessageSilent("Please enter a valid radius (must be greater than 0).", "Invalid Input",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
