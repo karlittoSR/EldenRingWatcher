@@ -9,10 +9,10 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     
     <!-- Version Information -->
-    <Version>3.5.1</Version>
-    <AssemblyVersion>3.5.1.0</AssemblyVersion>
-    <FileVersion>3.5.1.0</FileVersion>
-    <InformationalVersion>3.5.1 by karlitto__</InformationalVersion>
+    <Version>3.6.0</Version>
+    <AssemblyVersion>3.6.0.0</AssemblyVersion>
+    <FileVersion>3.6.0.0</FileVersion>
+    <InformationalVersion>3.6.0 by karlitto__</InformationalVersion>
     
     <!-- Product/Company Information -->
     <Product>Elden Ring Watcher</Product>

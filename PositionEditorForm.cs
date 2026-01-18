@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using SoulMemory;
+using SoulMemory.EldenRing;
 
 namespace EldenRingWatcher
 {
@@ -359,6 +361,7 @@ namespace EldenRingWatcher
         private TextBox yTextBox = null!;
         private TextBox zTextBox = null!;
         private TextBox radiusTextBox = null!;
+        private Button getPositionButton = null!;
         private Button okButton = null!;
         private Button cancelButton = null!;
 
@@ -377,7 +380,7 @@ namespace EldenRingWatcher
         private void InitializeComponents()
         {
             Text = "Add New Position Split";
-            Size = new Size(450, 350);
+            Size = new Size(450, 400);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -420,12 +423,32 @@ namespace EldenRingWatcher
             // Radius
             AddLabelAndTextBox("Radius:", ref radiusTextBox, ref yPos, labelX, textBoxX, textBoxWidth, spacing,
                 toolTip, "Detection radius around the position\n(must be greater than 0)");
+            
+            // Initialize radius with default value
+            radiusTextBox.Text = "3";
+
+            // GET POSITION Button
+            getPositionButton = new Button
+            {
+                Text = "GET POSITION",
+                Location = new Point(20, yPos + 10),
+                Size = new Size(400, 30),
+                BackColor = Color.FromArgb(0, 150, 200),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            getPositionButton.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 170);
+            getPositionButton.Click += GetPositionButton_Click;
+            toolTip.SetToolTip(getPositionButton, "Click to retrieve your current in-game position\n(Elden Ring must be running with player loaded)");
+            Controls.Add(getPositionButton);
 
             // OK Button
             okButton = new Button
             {
                 Text = "OK",
-                Location = new Point(240, yPos + 15),
+                Location = new Point(240, yPos + 50),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -439,7 +462,7 @@ namespace EldenRingWatcher
             cancelButton = new Button
             {
                 Text = "Cancel",
-                Location = new Point(330, yPos + 15),
+                Location = new Point(330, yPos + 50),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -487,6 +510,76 @@ namespace EldenRingWatcher
             Controls.Add(textBox);
 
             yPos += spacing;
+        }
+
+        private void GetPositionButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                getPositionButton.Enabled = false;
+                getPositionButton.Text = "Fetching position...";
+
+                var er = new EldenRing();
+                var refreshResult = er.TryRefresh();
+
+                if (!refreshResult.IsOk)
+                {
+                    MessageBox.Show("Failed to connect to Elden Ring. Make sure the game is running.",
+                        "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                if (!er.IsPlayerLoaded())
+                {
+                    MessageBox.Show("Player is not loaded. Please ensure your character is in-game (not on main menu).",
+                        "Player Not Loaded", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (er.GetScreenState() != ScreenState.InGame)
+                {
+                    MessageBox.Show("You are not in-game. Please exit menus and be in the game world.",
+                        "Not In-Game", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (er.IsBlackscreenActive())
+                {
+                    MessageBox.Show("Blackscreen is active. Please wait for the game to fully load.",
+                        "Blackscreen Active", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                var pos = er.GetPosition();
+
+                // Format map ID from position components
+                string mapId = $"m{pos.Area:x2}_{pos.Block:x2}_{pos.Region:x2}_{pos.Size:x2}";
+                
+                // Populate fields with current position
+                mapTextBox.Text = mapId;
+                xTextBox.Text = pos.X.ToString("F3");
+                yTextBox.Text = pos.Y.ToString("F3");
+                zTextBox.Text = pos.Z.ToString("F3");
+                
+                // Set radius to 3 if not already set
+                if (string.IsNullOrWhiteSpace(radiusTextBox.Text) || radiusTextBox.Text == "0")
+                {
+                    radiusTextBox.Text = "3";
+                }
+
+                MessageBox.Show($"Position retrieved successfully!\n\nMap: {mapId}\nX: {pos.X:F3}\nY: {pos.Y:F3}\nZ: {pos.Z:F3}",
+                    "Position Retrieved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving position: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                getPositionButton.Enabled = true;
+                getPositionButton.Text = "GET POSITION";
+            }
         }
 
         private void OkButton_Click(object? sender, EventArgs e)
