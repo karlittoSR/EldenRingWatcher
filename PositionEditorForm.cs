@@ -16,6 +16,7 @@ namespace EldenRingWatcher
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<PositionEntry> positions = new();
+        private int? draggedRowIndex = null;  // For drag & drop reordering
 
         public class PositionEntry
         {
@@ -132,6 +133,13 @@ namespace EldenRingWatcher
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
+
+            // Enable drag & drop for row reordering
+            positionsGrid.AllowDrop = true;
+            positionsGrid.MouseDown += PositionsGrid_MouseDown;
+            positionsGrid.DragOver += PositionsGrid_DragOver;
+            positionsGrid.DragDrop += PositionsGrid_DragDrop;
+            positionsGrid.DragLeave += PositionsGrid_DragLeave;
 
             contentPanel.Controls.Add(positionsGrid);
 
@@ -269,6 +277,58 @@ namespace EldenRingWatcher
             {
                 positionsGrid.Rows.Add(pos.Token, pos.Map, pos.X, pos.Y, pos.Z, pos.Radius);
             }
+        }
+
+        private void PositionsGrid_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                var hitTest = positionsGrid.HitTest(e.X, e.Y);
+                if (hitTest.RowIndex >= 0)
+                {
+                    draggedRowIndex = hitTest.RowIndex;
+                    positionsGrid.DoDragDrop(draggedRowIndex, DragDropEffects.Move);
+                }
+            }
+        }
+
+        private void PositionsGrid_DragOver(object? sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
+            
+            var hitTest = positionsGrid.HitTest(positionsGrid.PointToClient(new Point(e.X, e.Y)).X,
+                                               positionsGrid.PointToClient(new Point(e.X, e.Y)).Y);
+            if (hitTest.RowIndex >= 0)
+            {
+                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
+            }
+        }
+
+        private void PositionsGrid_DragDrop(object? sender, DragEventArgs e)
+        {
+            if (draggedRowIndex == null) return;
+
+            var dropPoint = positionsGrid.PointToClient(new Point(e.X, e.Y));
+            var hitTest = positionsGrid.HitTest(dropPoint.X, dropPoint.Y);
+            
+            if (hitTest.RowIndex >= 0 && hitTest.RowIndex != draggedRowIndex)
+            {
+                // Swap positions in list
+                var draggedPos = positions[draggedRowIndex.Value];
+                positions.RemoveAt(draggedRowIndex.Value);
+                positions.Insert(hitTest.RowIndex, draggedPos);
+                
+                RefreshGrid();
+                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
+                ToastNotification.Show("Position reordered", ToastNotification.NotificationType.Success, 1500);
+            }
+            
+            draggedRowIndex = null;
+        }
+
+        private void PositionsGrid_DragLeave(object? sender, EventArgs e)
+        {
+            draggedRowIndex = null;
         }
 
         private void AddButton_Click(object? sender, EventArgs e)
