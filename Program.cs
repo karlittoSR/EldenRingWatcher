@@ -57,9 +57,12 @@ namespace EldenRingWatcher
             
             if (!File.Exists(configPath))
             {
-                mainForm?.AppendLog($"[ERROR] Configuration file not found: {configPath}");
-                mainForm?.UpdateStatus("Configuration not found", System.Drawing.Color.Red);
-                return false;
+                mainForm?.AppendLog($"[INFO] Configuration file not found, creating default...");
+                if (!CreateDefaultConfiguration(configPath))
+                {
+                    mainForm?.UpdateStatus("Failed to create config", System.Drawing.Color.Red);
+                    return false;
+                }
             }
 
             try
@@ -97,6 +100,56 @@ namespace EldenRingWatcher
             if (LoadConfiguration())
             {
                 mainForm.AppendLog("[INFO] Configuration reloaded successfully");
+            }
+        }
+
+        static bool CreateDefaultConfiguration(string configPath)
+        {
+            try
+            {
+                var defaultConfig = new Config
+                {
+                    Settings = new Settings
+                    {
+                        PollIntervalMs = 200,
+                        DebounceMs = 6000,
+                        LogsPath = "./logs"
+                    },
+                    EventFlags = new List<EventFlagConfig>
+                    {
+                        new EventFlagConfig { Flag = 11007420, Token = "EXALTED_FLESH" },
+                        new EventFlagConfig { Flag = 16007210, Token = "SOMBER" },
+                        new EventFlagConfig { Flag = 172, Token = "RADAHN" },
+                        new EventFlagConfig { Flag = 171, Token = "GODRICK" }
+                    },
+                    PositionSplits = new List<PosSplitConfig>
+                    {
+                        new PosSplitConfig 
+                        { 
+                            Token = "POS_Example1", 
+                            Map = "m0b_00_00_00", 
+                            X = 0.0f, 
+                            Y = 0.0f, 
+                            Z = 0.0f, 
+                            Radius = 3.0f 
+                        }
+                    }
+                };
+
+                var options = new JsonSerializerOptions 
+                { 
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+                var json = JsonSerializer.Serialize(defaultConfig, options);
+                File.WriteAllText(configPath, json);
+                mainForm?.AppendLog($"[INFO] Created default configuration at {configPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                mainForm?.AppendLog($"[ERROR] Failed to create default config: {ex.Message}");
+                return false;
             }
         }
 
@@ -420,7 +473,7 @@ namespace EldenRingWatcher
             public int DebounceMs { get; init; } = 6000;
             
             [JsonPropertyName("logsPath")]
-            public string LogsPath { get; init; } = @"F:\Speedrun\livesplit\Components\EldenRingWatcher\logs";
+            public string LogsPath { get; init; } = "./logs";
         }
 
         record EventFlagConfig
