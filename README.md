@@ -27,14 +27,14 @@ A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags
 
 ### Running the Application
 
+Extract the package to whatever destination.
 Simply double-click `EldenRingWatcher.exe`. 
 - On first run, a default `config.json` will be created in the same folder with example event flags and position splits
-- A `logs/` folder will be created for output files (events.txt and latest.json)
+- A `logs/` folder will be created for output files (events.txt and latest.json). You can change the destination of this folder in the app.
 - The monitoring window will appear and start tracking game state in real-time
 
 ### Main Interface
 
-- **Reload Config**: Reloads configuration from disk without restarting
 - **Clear Logs**: Clears the log display (doesn't delete output files)
 - **Set Config**: Opens settings editor for poll interval, debounce time, and log output path
 - **Set Flag**: Opens editor to add/remove/modify event flags to track
