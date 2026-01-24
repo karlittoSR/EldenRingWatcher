@@ -54,6 +54,7 @@ The **GET POSITION** button in the Position Editor allows you to automatically c
 
 ### Configuration
 
+Edit `config.json` to change the path in which the \logs will be.
 Edit `config.json` to customize monitoring behavior:
 
 ```json
@@ -109,6 +110,30 @@ Edit `config.json` to customize monitoring behavior:
 
 ### streamer.bot
 Configure a file watcher on `latest.json` to trigger actions (scene changes, sound effects, overlays) whenever a new event is detected.
+For exemple, on streamer.bot here's my config: 
+
+1- Service -> File/Folder Watcher
+
+<img width="734" height="547" alt="image" src="https://github.com/user-attachments/assets/0b9cc302-5709-4d52-b50b-1e2712e19fed" />
+
+2- Actions & Queues -> Actions -> Add a new action
+
+<img width="724" height="389" alt="image" src="https://github.com/user-attachments/assets/144a8de2-83f4-41ca-b2e5-849cf037605a" />
+
+Triggers -> Add a new trigger
+
+<img width="781" height="296" alt="image" src="https://github.com/user-attachments/assets/fedb60f2-8139-49f1-bd0a-d0bfe59865e3" />
+
+Sub-Actions -> you can assign keypress shortcuts to your FPS Patch enable/disable states with if/else conditions. Logic should be someting like: 
+IF i'm in a starting position for activating the patch -> keypress my "enable" state and set it to 59 or whatever value.
+ELSE IF I'm in an ending position -> keypress the "disable" state.
+
+<img width="713" height="431" alt="image" src="https://github.com/user-attachments/assets/f8c963ee-e947-4718-a5bb-cfe3bb642909" />
+
+<img width="1102" height="428" alt="image" src="https://github.com/user-attachments/assets/ec53e2a1-6934-41ed-ac33-98a69cfe7604" />
+
+<img width="1113" height="209" alt="image" src="https://github.com/user-attachments/assets/d2f26184-32c3-4904-9802-d712f8a440a8" />
+
 
 ### OBS
 Use a script to read `events.txt` and display recent events as an overlay.
