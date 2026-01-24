@@ -422,7 +422,6 @@ namespace EldenRingWatcher
         private TextBox yTextBox = null!;
         private TextBox zTextBox = null!;
         private TextBox radiusTextBox = null!;
-        private Button getPositionButton = null!;
         private Button okButton = null!;
         private Button cancelButton = null!;
 
@@ -487,23 +486,6 @@ namespace EldenRingWatcher
             
             // Initialize radius with default value
             radiusTextBox.Text = "3";
-
-            // GET POSITION Button
-            getPositionButton = new Button
-            {
-                Text = "GET POSITION",
-                Location = new Point(20, yPos + 10),
-                Size = new Size(400, 30),
-                BackColor = Color.FromArgb(0, 150, 200),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold)
-            };
-            getPositionButton.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 170);
-            getPositionButton.Click += GetPositionButton_Click;
-            toolTip.SetToolTip(getPositionButton, "Click to retrieve your current in-game position\n(Elden Ring must be running with player loaded)");
-            Controls.Add(getPositionButton);
 
             // OK Button
             okButton = new Button
@@ -571,70 +553,6 @@ namespace EldenRingWatcher
             Controls.Add(textBox);
 
             yPos += spacing;
-        }
-
-        private void GetPositionButton_Click(object? sender, EventArgs e)
-        {
-            try
-            {
-                getPositionButton.Enabled = false;
-                getPositionButton.Text = "Fetching position...";
-
-                var er = new EldenRing();
-                var refreshResult = er.TryRefresh();
-
-                if (!refreshResult.IsOk)
-                {
-                    ToastNotification.Show("Failed to connect to Elden Ring. Make sure the game is running.", ToastNotification.NotificationType.Error);
-                    return;
-                }
-
-                if (!er.IsPlayerLoaded())
-                {
-                    ToastNotification.Show("Player is not loaded. Please ensure your character is in-game.", ToastNotification.NotificationType.Warning);
-                    return;
-                }
-
-                if (er.GetScreenState() != ScreenState.InGame)
-                {
-                    ToastNotification.Show("You are not in-game. Please exit menus and be in the game world.", ToastNotification.NotificationType.Warning);
-                    return;
-                }
-
-                if (er.IsBlackscreenActive())
-                {
-                    ToastNotification.Show("Blackscreen is active. Please wait for the game to fully load.", ToastNotification.NotificationType.Warning);
-                    return;
-                }
-
-                var pos = er.GetPosition();
-
-                // Format map ID from position components
-                string mapId = $"m{pos.Area:x2}_{pos.Block:x2}_{pos.Region:x2}_{pos.Size:x2}";
-                
-                // Populate fields with current position
-                mapTextBox.Text = mapId;
-                xTextBox.Text = pos.X.ToString("F3");
-                yTextBox.Text = pos.Y.ToString("F3");
-                zTextBox.Text = pos.Z.ToString("F3");
-                
-                // Set radius to 3 if not already set
-                if (string.IsNullOrWhiteSpace(radiusTextBox.Text) || radiusTextBox.Text == "0")
-                {
-                    radiusTextBox.Text = "3";
-                }
-
-                ToastNotification.Show($"Position retrieved: {mapId}", ToastNotification.NotificationType.Success, 2000);
-            }
-            catch (Exception ex)
-            {
-                ToastNotification.Show($"Error retrieving position: {ex.Message}", ToastNotification.NotificationType.Error);
-            }
-            finally
-            {
-                getPositionButton.Enabled = true;
-                getPositionButton.Text = "GET POSITION";
-            }
         }
 
         private void OkButton_Click(object? sender, EventArgs e)

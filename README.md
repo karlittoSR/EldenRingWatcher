@@ -174,6 +174,28 @@ And then ask Streamer.bot to show them whenever a flag is "true" in the same act
 
 Free to use and distribute. Created for the speedrunning community.
 
+## Dependencies
+
+The application uses the following NuGet packages:
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| **SoulMemory** | 1.8.5 | Core library for reading Elden Ring game memory and accessing player data |
+| **Microsoft.CSharp** | 4.7.0 | C# language runtime features (transitive dependency) |
+
+### .NET Runtime
+
+- **Target Framework**: .NET 7.0 (Windows)
+- **Runtime**: Includes .NET 7.0 runtime (self-contained)
+- **Architecture**: x64 (Windows 64-bit)
+
+### System Requirements
+
+- **OS**: Windows 7 or later
+- **Architecture**: x64 (64-bit)
+- **RAM**: Minimal (< 50 MB)
+- **Disk Space**: ~150 MB for the self-contained executable
+
 ## Credits
 
 - Built with C# and Windows Forms
@@ -181,8 +203,8 @@ Free to use and distribute. Created for the speedrunning community.
 
 ---
 
-**Version**: 3.6.1  
-**Last Updated**: January 18, 2026
+**Version**: 3.5.3  
+**Last Updated**: January 24, 2026
 
 ### Changelog
 

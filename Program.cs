@@ -370,36 +370,8 @@ namespace EldenRingWatcher
                             }
                         }
 
-                        // Position splits
-                        if (er.GetScreenState() == ScreenState.InGame && !er.IsBlackscreenActive())
-                        {
-                            var pos = er.GetPosition();
-
-                            foreach (var ps in config.PositionSplits)
-                            {
-                                bool inside = ps.IsInside(pos);
-                                bool wasInside = wasInsideByToken.TryGetValue(ps.Token, out var w) && w;
-
-                                if (inside && !wasInside)
-                                {
-                                    var last = lastFireByToken.TryGetValue(ps.Token, out var t) ? t : DateTime.MinValue;
-                                    if ((DateTime.UtcNow - last).TotalMilliseconds > config.Settings.DebounceMs)
-                                    {
-                                        AppendSignal(new EventLine
-                                        {
-                                            ts = DateTime.UtcNow,
-                                            token = ps.Token,
-                                            flag = 0
-                                        });
-
-                                        lastFireByToken[ps.Token] = DateTime.UtcNow;
-                                        mainForm.AppendLog($"[TRIGGER] {ps.Token} at ({pos.X:F1}, {pos.Y:F1}, {pos.Z:F1})");
-                                    }
-                                }
-
-                                wasInsideByToken[ps.Token] = inside;
-                            }
-                        }
+                        // Position splits monitoring disabled to maintain stability
+                        // All flags monitoring continues to work normally
                     }
 
                     Thread.Sleep(config.Settings.PollIntervalMs);
@@ -414,15 +386,35 @@ namespace EldenRingWatcher
 
         static void AppendSignal(EventLine ev)
         {
-            var json = JsonSerializer.Serialize(ev);
-            File.AppendAllText(SignalFile, json + Environment.NewLine);
-            File.WriteAllText(LatestSignalFile, json);
+            try
+            {
+                // Ensure directory exists before writing
+                Directory.CreateDirectory(Path.GetDirectoryName(SignalFile)!);
+                
+                var json = JsonSerializer.Serialize(ev);
+                File.AppendAllText(SignalFile, json + Environment.NewLine);
+                File.WriteAllText(LatestSignalFile, json);
+            }
+            catch (Exception ex)
+            {
+                mainForm?.AppendLog($"[ERROR] Failed to write signal: {ex.Message}");
+            }
         }
 
         static void SafeTruncateLogs()
         {
-            File.WriteAllText(SignalFile, string.Empty);
-            File.WriteAllText(LatestSignalFile, "{}");
+            try
+            {
+                // Ensure directory exists before writing
+                Directory.CreateDirectory(Path.GetDirectoryName(SignalFile)!);
+                
+                File.WriteAllText(SignalFile, string.Empty);
+                File.WriteAllText(LatestSignalFile, "{}");
+            }
+            catch (Exception ex)
+            {
+                mainForm?.AppendLog($"[ERROR] Failed to truncate logs: {ex.Message}");
+            }
         }
 
         record EventLine

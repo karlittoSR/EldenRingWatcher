@@ -38,9 +38,9 @@ namespace EldenRingWatcher
             _currentToast?.Invoke(new Action(() => _currentToast?.Close()));
 
             // Calculate dimensions with padding for text wrapping
-            const int maxWidth = 300;
-            const int minHeight = 60;
-            const int padding = 15;
+            const int maxWidth = 200;
+            const int minHeight = 35;
+            const int padding = 8;
 
             var toastForm = new Form
             {
@@ -62,7 +62,7 @@ namespace EldenRingWatcher
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
                 Margin = new Padding(0)
             };
 
