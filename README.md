@@ -138,6 +138,16 @@ ELSE IF I'm in an ending position -> keypress the "disable" state.
 ### OBS
 Use a script to read `events.txt` and display recent events as an overlay.
 
+You can for example have images here on OBS, on invisible state: 
+
+<img width="237" height="206" alt="image" src="https://github.com/user-attachments/assets/e7ad153a-caa5-4fcf-8aaf-349a108d03a8" />
+
+And then ask Streamer.bot to show them whenever a flag is "true" in the same action that watches latest.json file :
+
+<img width="794" height="449" alt="image" src="https://github.com/user-attachments/assets/abb85177-beed-4dd0-a66d-fa143467c7da" />
+
+
+
 ## Requirements
 
 - Windows 10 or later (x64)
