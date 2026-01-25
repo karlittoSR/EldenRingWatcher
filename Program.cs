@@ -307,6 +307,7 @@ namespace EldenRingWatcher
 
             bool wasAttached = false;
             bool prevGameStarts = false;
+            DateTime playerEnteredGameTime = DateTime.MinValue;
 
             while (true)
             {
@@ -319,6 +320,7 @@ namespace EldenRingWatcher
                     {
                         mainForm.AppendLog("[INFO] Player is in game");
                         mainForm.UpdateStatus("In Game - Monitoring", System.Drawing.Color.LightGreen);
+                        playerEnteredGameTime = DateTime.UtcNow;
                     }
                     else if (!attached && wasAttached)
                     {
@@ -370,8 +372,47 @@ namespace EldenRingWatcher
                             }
                         }
 
-                        // Position splits monitoring disabled to maintain stability
-                        // All flags monitoring continues to work normally
+                        // Position splits monitoring with 1 second delay to avoid crashes during player load
+                        if (er.GetScreenState() == ScreenState.InGame && !er.IsBlackscreenActive())
+                        {
+                            // Wait 1 second after player enters game before monitoring positions
+                            if ((DateTime.UtcNow - playerEnteredGameTime).TotalMilliseconds >= 1000)
+                            {
+                                try
+                                {
+                                    var pos = er.GetPosition();
+
+                                    foreach (var ps in config.PositionSplits)
+                                    {
+                                        bool inside = ps.IsInside(pos);
+                                        bool wasInside = wasInsideByToken.TryGetValue(ps.Token, out var w) && w;
+
+                                        if (inside && !wasInside)
+                                        {
+                                            var last = lastFireByToken.TryGetValue(ps.Token, out var t) ? t : DateTime.MinValue;
+                                            if ((DateTime.UtcNow - last).TotalMilliseconds > config.Settings.DebounceMs)
+                                            {
+                                                AppendSignal(new EventLine
+                                                {
+                                                    ts = DateTime.UtcNow,
+                                                    token = ps.Token,
+                                                    flag = 0
+                                                });
+
+                                                lastFireByToken[ps.Token] = DateTime.UtcNow;
+                                                mainForm.AppendLog($"[TRIGGER] {ps.Token} at ({pos.X:F1}, {pos.Y:F1}, {pos.Z:F1})");
+                                            }
+                                        }
+
+                                        wasInsideByToken[ps.Token] = inside;
+                                    }
+                                }
+                                catch (Exception posEx)
+                                {
+                                    mainForm.AppendLog($"[WARNING] Position monitoring error: {posEx.Message}");
+                                }
+                            }
+                        }
                     }
 
                     Thread.Sleep(config.Settings.PollIntervalMs);
