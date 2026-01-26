@@ -11,10 +11,10 @@ namespace EldenRingWatcher
         private DataGridView flagsGrid = null!;
         private Button addButton = null!;
         private Button deleteButton = null!;
+        private Button findFlagsButton = null!;
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<FlagEntry> flags = new();
-        private int? draggedRowIndex = null;  // For drag & drop reordering
 
         public class FlagEntry
         {
@@ -123,36 +123,33 @@ namespace EldenRingWatcher
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToResizeRows = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
 
-            // Enable drag & drop for row reordering
-            flagsGrid.AllowDrop = true;
-            flagsGrid.MouseDown += FlagsGrid_MouseDown;
-            flagsGrid.DragOver += FlagsGrid_DragOver;
-            flagsGrid.DragDrop += FlagsGrid_DragDrop;
-            flagsGrid.DragLeave += FlagsGrid_DragLeave;
+            // Cell editing
+            flagsGrid.CellDoubleClick += FlagsGrid_CellDoubleClick;
+            flagsGrid.CellEndEdit += FlagsGrid_CellEndEdit;
 
             contentPanel.Controls.Add(flagsGrid);
 
             // Define columns
             flagsGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "Flag",
-                HeaderText = "Flag ID",
-                DataPropertyName = "Flag",
-                FillWeight = 30
-            });
-
-            flagsGrid.Columns.Add(new DataGridViewTextBoxColumn
-            {
                 Name = "Token",
                 HeaderText = "Token Name",
                 DataPropertyName = "Token",
                 FillWeight = 70
+            });
+
+            flagsGrid.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "Flag",
+                HeaderText = "Flag ID",
+                DataPropertyName = "Flag",
+                FillWeight = 30
             });
 
             // Button Panel
@@ -193,7 +190,19 @@ namespace EldenRingWatcher
             deleteButton.FlatAppearance.BorderColor = Color.FromArgb(160, 40, 40);
             deleteButton.Click += DeleteButton_Click;
 
-            // Bottom row buttons (Save/Cancel)
+            findFlagsButton = new Button
+            {
+                Text = "Find Flags",
+                Location = new Point(235, 10),
+                Size = new Size(100, 30),
+                BackColor = Color.FromArgb(150, 100, 0),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            findFlagsButton.FlatAppearance.BorderColor = Color.FromArgb(180, 120, 0);
+            findFlagsButton.Click += FindFlagsButton_Click;
             saveButton = new Button
             {
                 Text = "Save",
@@ -224,6 +233,7 @@ namespace EldenRingWatcher
 
             buttonPanel.Controls.Add(addButton);
             buttonPanel.Controls.Add(deleteButton);
+            buttonPanel.Controls.Add(findFlagsButton);
             buttonPanel.Controls.Add(saveButton);
             buttonPanel.Controls.Add(cancelButton);
 
@@ -236,62 +246,50 @@ namespace EldenRingWatcher
         private void RefreshGrid()
         {
             flagsGrid.Rows.Clear();
-            foreach (var flag in flags)
+            // Sort by Token alphabetically
+            var sortedFlags = flags.OrderBy(f => f.Token).ToList();
+            foreach (var flag in sortedFlags)
             {
-                flagsGrid.Rows.Add(flag.Flag, flag.Token);
+                flagsGrid.Rows.Add(flag.Token, flag.Flag);
+            }
+            // Update the flags list to match the sorted order
+            flags = sortedFlags;
+        }
+
+        private void FlagsGrid_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            // Allow double-click to edit cell
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+            {
+                flagsGrid.BeginEdit(selectAll: true);
             }
         }
 
-        private void FlagsGrid_MouseDown(object? sender, MouseEventArgs e)
+        private void FlagsGrid_CellEndEdit(object? sender, DataGridViewCellEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            // Update the flags list when editing ends
+            if (e.RowIndex >= 0 && e.RowIndex < flags.Count)
             {
-                var hitTest = flagsGrid.HitTest(e.X, e.Y);
-                if (hitTest.RowIndex >= 0)
+                try
                 {
-                    draggedRowIndex = hitTest.RowIndex;
-                    flagsGrid.DoDragDrop(draggedRowIndex, DragDropEffects.Move);
+                    var row = flagsGrid.Rows[e.RowIndex];
+                    
+                    if (e.ColumnIndex == 0)
+                    {
+                        // Token Name column (index 0)
+                        flags[e.RowIndex].Token = row.Cells[0].Value?.ToString() ?? "";
+                    }
+                    else if (e.ColumnIndex == 1)
+                    {
+                        // Flag ID column (index 1)
+                        if (uint.TryParse(row.Cells[1].Value?.ToString() ?? "", out var flagId))
+                        {
+                            flags[e.RowIndex].Flag = flagId;
+                        }
+                    }
                 }
+                catch { /* Ignore parse errors */ }
             }
-        }
-
-        private void FlagsGrid_DragOver(object? sender, DragEventArgs e)
-        {
-            e.Effect = DragDropEffects.Move;
-            
-            var hitTest = flagsGrid.HitTest(flagsGrid.PointToClient(new Point(e.X, e.Y)).X,
-                                            flagsGrid.PointToClient(new Point(e.X, e.Y)).Y);
-            if (hitTest.RowIndex >= 0)
-            {
-                flagsGrid.Rows[hitTest.RowIndex].Selected = true;
-            }
-        }
-
-        private void FlagsGrid_DragDrop(object? sender, DragEventArgs e)
-        {
-            if (draggedRowIndex == null) return;
-
-            var dropPoint = flagsGrid.PointToClient(new Point(e.X, e.Y));
-            var hitTest = flagsGrid.HitTest(dropPoint.X, dropPoint.Y);
-            
-            if (hitTest.RowIndex >= 0 && hitTest.RowIndex != draggedRowIndex)
-            {
-                // Swap flags in list
-                var draggedFlag = flags[draggedRowIndex.Value];
-                flags.RemoveAt(draggedRowIndex.Value);
-                flags.Insert(hitTest.RowIndex, draggedFlag);
-                
-                RefreshGrid();
-                flagsGrid.Rows[hitTest.RowIndex].Selected = true;
-                ToastNotification.Show("Flag reordered", ToastNotification.NotificationType.Success, 1500);
-            }
-            
-            draggedRowIndex = null;
-        }
-
-        private void FlagsGrid_DragLeave(object? sender, EventArgs e)
-        {
-            draggedRowIndex = null;
         }
 
         private void AddButton_Click(object? sender, EventArgs e)
@@ -311,13 +309,19 @@ namespace EldenRingWatcher
 
         private void DeleteButton_Click(object? sender, EventArgs e)
         {
-            if (flagsGrid.SelectedRows.Count == 0)
+            // In CellSelect mode, find the selected row from selected cells
+            int selectedIndex = -1;
+            if (flagsGrid.SelectedCells.Count > 0)
+            {
+                selectedIndex = flagsGrid.SelectedCells[0].RowIndex;
+            }
+
+            if (selectedIndex < 0)
             {
                 ToastNotification.Show("Please select a flag to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
-            var selectedIndex = flagsGrid.SelectedRows[0].Index;
             var flag = flags[selectedIndex];
 
             var result = MessageBox.Show(
@@ -334,20 +338,38 @@ namespace EldenRingWatcher
             }
         }
 
+        private void FindFlagsButton_Click(object? sender, EventArgs e)
+        {
+            try
+            {
+                string url = "https://soulsmodding.com/doku.php?id=er-refmat:event-flag-list";
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                ToastNotification.Show($"Failed to open browser: {ex.Message}", ToastNotification.NotificationType.Error);
+            }
+        }
+
         private void SaveButton_Click(object? sender, EventArgs e)
         {
             // Update flags from grid (in case user edited directly)
+            // Columns: [0]=Token, [1]=Flag
             flags.Clear();
             foreach (DataGridViewRow row in flagsGrid.Rows)
             {
                 if (row.Cells[0].Value != null && row.Cells[1].Value != null)
                 {
-                    if (uint.TryParse(row.Cells[0].Value.ToString(), out uint flagId))
+                    if (uint.TryParse(row.Cells[1].Value.ToString(), out uint flagId))
                     {
                         flags.Add(new FlagEntry
                         {
                             Flag = flagId,
-                            Token = row.Cells[1].Value.ToString() ?? ""
+                            Token = row.Cells[0].Value.ToString() ?? ""
                         });
                     }
                 }

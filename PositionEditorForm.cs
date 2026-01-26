@@ -16,7 +16,6 @@ namespace EldenRingWatcher
         private Button saveButton = null!;
         private Button cancelButton = null!;
         private List<PositionEntry> positions = new();
-        private int? draggedRowIndex = null;  // For drag & drop reordering
 
         public class PositionEntry
         {
@@ -129,18 +128,15 @@ namespace EldenRingWatcher
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToResizeRows = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
                 MultiSelect = false,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
             };
 
-            // Enable drag & drop for row reordering
-            positionsGrid.AllowDrop = true;
-            positionsGrid.MouseDown += PositionsGrid_MouseDown;
-            positionsGrid.DragOver += PositionsGrid_DragOver;
-            positionsGrid.DragDrop += PositionsGrid_DragDrop;
-            positionsGrid.DragLeave += PositionsGrid_DragLeave;
+            // Cell editing
+            positionsGrid.CellDoubleClick += PositionsGrid_CellDoubleClick;
+            positionsGrid.CellEndEdit += PositionsGrid_CellEndEdit;
 
             contentPanel.Controls.Add(positionsGrid);
 
@@ -274,62 +270,63 @@ namespace EldenRingWatcher
         private void RefreshGrid()
         {
             positionsGrid.Rows.Clear();
-            foreach (var pos in positions)
+            // Sort by Token alphabetically
+            var sortedPositions = positions.OrderBy(p => p.Token).ToList();
+            foreach (var pos in sortedPositions)
             {
                 positionsGrid.Rows.Add(pos.Token, pos.Map, pos.X, pos.Y, pos.Z, pos.Radius);
             }
+            // Update the positions list to match the sorted order
+            positions = sortedPositions;
         }
 
-        private void PositionsGrid_MouseDown(object? sender, MouseEventArgs e)
+        private void PositionsGrid_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            // Allow double-click to edit cell
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
             {
-                var hitTest = positionsGrid.HitTest(e.X, e.Y);
-                if (hitTest.RowIndex >= 0)
+                positionsGrid.BeginEdit(selectAll: true);
+            }
+        }
+
+        private void PositionsGrid_CellEndEdit(object? sender, DataGridViewCellEventArgs e)
+        {
+            // Update the positions list when editing ends
+            if (e.RowIndex >= 0 && e.RowIndex < positions.Count)
+            {
+                try
                 {
-                    draggedRowIndex = hitTest.RowIndex;
-                    positionsGrid.DoDragDrop(draggedRowIndex, DragDropEffects.Move);
+                    var row = positionsGrid.Rows[e.RowIndex];
+                    var pos = positions[e.RowIndex];
+                    
+                    switch (e.ColumnIndex)
+                    {
+                        case 0: // Token
+                            pos.Token = row.Cells[0].Value?.ToString() ?? "";
+                            break;
+                        case 1: // Map
+                            pos.Map = row.Cells[1].Value?.ToString() ?? "";
+                            break;
+                        case 2: // X
+                            if (float.TryParse(row.Cells[2].Value?.ToString() ?? "", out var x))
+                                pos.X = x;
+                            break;
+                        case 3: // Y
+                            if (float.TryParse(row.Cells[3].Value?.ToString() ?? "", out var y))
+                                pos.Y = y;
+                            break;
+                        case 4: // Z
+                            if (float.TryParse(row.Cells[4].Value?.ToString() ?? "", out var z))
+                                pos.Z = z;
+                            break;
+                        case 5: // Radius
+                            if (float.TryParse(row.Cells[5].Value?.ToString() ?? "", out var radius))
+                                pos.Radius = radius;
+                            break;
+                    }
                 }
+                catch { /* Ignore parse errors */ }
             }
-        }
-
-        private void PositionsGrid_DragOver(object? sender, DragEventArgs e)
-        {
-            e.Effect = DragDropEffects.Move;
-            
-            var hitTest = positionsGrid.HitTest(positionsGrid.PointToClient(new Point(e.X, e.Y)).X,
-                                               positionsGrid.PointToClient(new Point(e.X, e.Y)).Y);
-            if (hitTest.RowIndex >= 0)
-            {
-                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
-            }
-        }
-
-        private void PositionsGrid_DragDrop(object? sender, DragEventArgs e)
-        {
-            if (draggedRowIndex == null) return;
-
-            var dropPoint = positionsGrid.PointToClient(new Point(e.X, e.Y));
-            var hitTest = positionsGrid.HitTest(dropPoint.X, dropPoint.Y);
-            
-            if (hitTest.RowIndex >= 0 && hitTest.RowIndex != draggedRowIndex)
-            {
-                // Swap positions in list
-                var draggedPos = positions[draggedRowIndex.Value];
-                positions.RemoveAt(draggedRowIndex.Value);
-                positions.Insert(hitTest.RowIndex, draggedPos);
-                
-                RefreshGrid();
-                positionsGrid.Rows[hitTest.RowIndex].Selected = true;
-                ToastNotification.Show("Position reordered", ToastNotification.NotificationType.Success, 1500);
-            }
-            
-            draggedRowIndex = null;
-        }
-
-        private void PositionsGrid_DragLeave(object? sender, EventArgs e)
-        {
-            draggedRowIndex = null;
         }
 
         private void AddButton_Click(object? sender, EventArgs e)
@@ -353,13 +350,19 @@ namespace EldenRingWatcher
 
         private void DeleteButton_Click(object? sender, EventArgs e)
         {
-            if (positionsGrid.SelectedRows.Count == 0)
+            // In CellSelect mode, find the selected row from selected cells
+            int selectedIndex = -1;
+            if (positionsGrid.SelectedCells.Count > 0)
+            {
+                selectedIndex = positionsGrid.SelectedCells[0].RowIndex;
+            }
+
+            if (selectedIndex < 0)
             {
                 ToastNotification.Show("Please select a position to delete.", ToastNotification.NotificationType.Info);
                 return;
             }
 
-            var selectedIndex = positionsGrid.SelectedRows[0].Index;
             var pos = positions[selectedIndex];
 
             var result = MessageBox.Show(
@@ -379,6 +382,7 @@ namespace EldenRingWatcher
         private void SaveButton_Click(object? sender, EventArgs e)
         {
             // Update positions from grid (in case user edited directly)
+            // Columns: [0]=Token, [1]=Map, [2]=X, [3]=Y, [4]=Z, [5]=Radius
             positions.Clear();
             foreach (DataGridViewRow row in positionsGrid.Rows)
             {
@@ -422,8 +426,10 @@ namespace EldenRingWatcher
         private TextBox yTextBox = null!;
         private TextBox zTextBox = null!;
         private TextBox radiusTextBox = null!;
+        private Button getPositionButton = null!;
         private Button okButton = null!;
         private Button cancelButton = null!;
+        private bool isFetchingPosition = false;
 
         public string TokenName { get; private set; } = "";
         public string MapId { get; private set; } = "";
@@ -440,7 +446,7 @@ namespace EldenRingWatcher
         private void InitializeComponents()
         {
             Text = "Add New Position Split";
-            Size = new Size(450, 400);
+            Size = new Size(450, 500);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -487,11 +493,28 @@ namespace EldenRingWatcher
             // Initialize radius with default value
             radiusTextBox.Text = "3";
 
-            // OK Button
+            // GET POSITION Button
+            getPositionButton = new Button
+            {
+                Text = "GET POSITION",
+                Location = new Point(20, yPos + 10),
+                Size = new Size(400, 30),
+                BackColor = Color.FromArgb(0, 150, 200),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            getPositionButton.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 170);
+            getPositionButton.Click += GetPositionButton_Click;
+            toolTip.SetToolTip(getPositionButton, "Click to retrieve your current in-game position\n(Elden Ring must be running with player loaded)\nWaits 1 second after game loads to ensure stability");
+            Controls.Add(getPositionButton);
+
+            yPos += 50;
             okButton = new Button
             {
                 Text = "OK",
-                Location = new Point(240, yPos + 50),
+                Location = new Point(240, yPos),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
@@ -505,7 +528,7 @@ namespace EldenRingWatcher
             cancelButton = new Button
             {
                 Text = "Cancel",
-                Location = new Point(330, yPos + 50),
+                Location = new Point(330, yPos),
                 Size = new Size(80, 30),
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
@@ -553,6 +576,120 @@ namespace EldenRingWatcher
             Controls.Add(textBox);
 
             yPos += spacing;
+        }
+
+        private void GetPositionButton_Click(object? sender, EventArgs e)
+        {
+            // Prevent multiple concurrent calls with double-check
+            if (isFetchingPosition || !getPositionButton.Enabled)
+                return;
+
+            isFetchingPosition = true;
+            getPositionButton.Enabled = false;
+            getPositionButton.Text = "Fetching position...";
+            Application.DoEvents(); // Force UI update
+
+            try
+            {
+                try
+                {
+                    var er = new EldenRing();
+                    
+                    // Check 1: Can we connect to the game? Retry up to 5 times with delay
+                    bool connected = false;
+                    for (int attempt = 0; attempt < 5; attempt++)
+                    {
+                        var refreshResult = er.TryRefresh();
+                        if (refreshResult.IsOk)
+                        {
+                            connected = true;
+                            break;
+                        }
+                        if (attempt < 4) // Don't sleep on last attempt
+                        {
+                            System.Threading.Thread.Sleep(200);
+                        }
+                    }
+
+                    if (!connected)
+                    {
+                        ToastNotification.Show("Failed to connect to Elden Ring. Make sure the game is running and try again.", ToastNotification.NotificationType.Error);
+                        return;
+                    }
+
+                    // Check 2: Is player loaded?
+                    if (!er.IsPlayerLoaded())
+                    {
+                        ToastNotification.Show("Player is not loaded. Please ensure your character is in-game.", ToastNotification.NotificationType.Warning);
+                        return;
+                    }
+
+                    // Check 3: Are we in the game world?
+                    if (er.GetScreenState() != ScreenState.InGame)
+                    {
+                        ToastNotification.Show("You are not in-game. Please exit menus and be in the game world.", ToastNotification.NotificationType.Warning);
+                        return;
+                    }
+
+                    // Check 4: Is blackscreen active?
+                    if (er.IsBlackscreenActive())
+                    {
+                        ToastNotification.Show("Blackscreen is active. Please wait for the game to fully load.", ToastNotification.NotificationType.Warning);
+                        return;
+                    }
+
+                    // Check 5: Wait a moment to ensure game is fully loaded before reading position
+                    // This prevents crashes during the player load transition
+                    System.Threading.Thread.Sleep(500);
+
+                    // Try to get position - wrapped in try-catch
+                    Position? pos = null;
+                    try
+                    {
+                        pos = er.GetPosition();
+                    }
+                    catch (Exception getPosEx)
+                    {
+                        ToastNotification.Show($"Failed to read position: {getPosEx.Message}. Try again in a moment.", ToastNotification.NotificationType.Error);
+                        return;
+                    }
+
+                    if (pos == null)
+                    {
+                        ToastNotification.Show("Could not retrieve position. Try again.", ToastNotification.NotificationType.Error);
+                        return;
+                    }
+
+                    // Format map ID from position components
+                    string mapId = $"m{pos.Area:x2}_{pos.Block:x2}_{pos.Region:x2}_{pos.Size:x2}";
+                    
+                    // Populate fields with current position
+                    mapTextBox.Text = mapId;
+                    xTextBox.Text = pos.X.ToString("F3");
+                    yTextBox.Text = pos.Y.ToString("F3");
+                    zTextBox.Text = pos.Z.ToString("F3");
+                    
+                    // Set radius to 3 if not already set
+                    if (string.IsNullOrWhiteSpace(radiusTextBox.Text) || radiusTextBox.Text == "0")
+                    {
+                        radiusTextBox.Text = "3";
+                    }
+
+                    ToastNotification.Show($"Position retrieved: {mapId}", ToastNotification.NotificationType.Success, 2000);
+                }
+                catch (Exception ex)
+                {
+                    // Catch any unexpected errors
+                    ToastNotification.Show($"Unexpected error: {ex.Message}", ToastNotification.NotificationType.Error);
+                }
+            }
+            finally
+            {
+                isFetchingPosition = false;
+                getPositionButton.Enabled = true;
+                getPositionButton.Text = "GET POSITION";
+                Application.DoEvents(); // Force UI update
+            }
         }
 
         private void OkButton_Click(object? sender, EventArgs e)

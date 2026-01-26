@@ -5,10 +5,11 @@ A real-time game monitoring tool for Elden Ring speedrunners. Tracks event flags
 ## Features
 
 - **Real-time Event Monitoring**: Tracks Elden Ring event flags (boss defeats, item pickups, key moments)
-- **Position Tracking**: Monitors player position changes to detect location-based milestones
+- **Position Tracking**: Monitors player position changes to detect location-based milestones (sorted alphabetically by token name)
 - **GET POSITION Button**: Automatically capture current player position with one click - retrieves map ID, X/Y/Z coordinates, and auto-fills form fields
-- **Drag & Drop Reordering**: Reorder flags and positions by dragging rows in the editor windows
-- **Toast Notifications**: Non-intrusive status messages for user feedback
+- **Double-Click Inline Editing**: Edit flag IDs and token names directly in the grid by double-clicking any cell
+- **Alphabetical Sorting**: Flags and positions automatically sort alphabetically by token name for better organization
+- **Toast Notifications**: Non-intrusive status messages for user feedback (40% smaller for less screen obstruction)
 - **Auto-save Configuration**: Settings automatically save when closing dialogs
 - **Automatic Logging**: Outputs events to two files for integration with streaming tools:
   - `events.txt` - Complete history of all triggered events
@@ -40,6 +41,14 @@ Simply double-click `EldenRingWatcher.exe`.
 - **Set Flag**: Opens editor to add/remove/modify event flags to track
 - **Set Position**: Opens editor to add/remove/modify position-based milestones with **GET POSITION** button
 - **ℹ️ Info**: Shows version and feature information
+
+#### Flag and Position Editors
+
+- **Double-Click to Edit**: Double-click any cell in the grid to edit it directly (token names, flag IDs, coordinates, etc.)
+- **Alphabetical Sorting**: Flags and positions are automatically sorted alphabetically by token name
+- **Add/Delete**: Use the Add button to create new entries or select a cell and click Delete to remove an entry
+- **Save/Cancel**: Click Save to apply changes or Cancel to discard them
+- **Find Flags Button**: Click to open the SoulsModding event flag reference guide in your browser
 
 #### GET POSITION Button
 
@@ -203,12 +212,30 @@ The application uses the following NuGet packages:
 
 ---
 
-**Version**: 3.5.3  
-**Last Updated**: January 24, 2026
+**Version**: 3.6.0  
+**Last Updated**: January 26, 2026
 
 ### Changelog
 
-**v3.6.1 - Quality of Life Improvements**
+**v3.6.0 - UI Refinements & Editing Features**
+- ✨ **Double-Click Inline Editing**: Edit flag IDs, token names, and position coordinates directly in the grid
+- ✨ **Alphabetical Sorting**: Flags and positions automatically sort by token name for better organization
+- ✨ **Column Reordering**: Token Name now appears first in the Flags editor for better readability
+- 🔧 **CellSelect Mode**: Switched to cell-based selection for better editing experience
+- 🔧 **Delete Button Fix**: Delete functionality now works properly with cell selection
+- 🔧 **Position Monitoring**: Position checks include 1-second delay after player enters game to prevent crashes
+- 🔧 **GET POSITION Safety**: Enhanced with 7-layer error protection and 5 connection retry attempts
+- 🔧 **Anti-Spam Protection**: GET POSITION button prevents accidental spam-clicks
+
+**v3.5.4 - Stability & Features**
+- ✨ **GET POSITION Button**: One-click position capture with comprehensive validation
+- ✨ **Find Flags Button**: Quick link to SoulsModding event flag reference
+- ✨ **Position Monitoring Re-enabled**: Fixed with 1-second safety delay
+- 🔧 **Toast Notifications**: Reduced size by 40% (300→200px width, 60→35px height)
+- 🔧 **Auto-create Logs Folder**: Prevents crashes on new installations
+- 🔧 **Better Error Handling**: Improved try-catch blocks throughout
+
+**v3.5.3 - Bug Fixes & Performance**
 - ✨ **Toast Notifications**: Non-intrusive status messages replace message boxes
 - ✨ **Auto-save Config**: Settings save automatically when closing dialogs (no manual reload needed)
 - ✨ **Drag & Drop Reordering**: Drag rows in flag and position lists to reorder entries
