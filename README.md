@@ -240,9 +240,3 @@ The application uses the following NuGet packages:
 - ✨ **Auto-save Config**: Settings save automatically when closing dialogs (no manual reload needed)
 - ✨ **Drag & Drop Reordering**: Drag rows in flag and position lists to reorder entries
 - 🔧 Code refactoring to reduce duplication
-
-**v3.6.0 - Position Capture**
-- ✨ GET POSITION button to capture player coordinates with one click
-- ✨ Auto-population of map ID, X/Y/Z coordinates in position editor
-- 🛠️ Enhanced validation for position capture (game attached, player loaded, in-game state, no blackscreen)
-- 🔧 Single-file publishing configuration
