@@ -161,7 +161,7 @@ And then ask Streamer.bot to show them whenever a flag is "true" in the same act
 
 - Windows 10 or later (x64)
 - .NET Runtime 7.0 (included in the executable)
-- Elden Ring running !
+- Elden Ring running ! (works with every version of the game)
 
 ## Troubleshooting
 
