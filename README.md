@@ -64,7 +64,7 @@ The **GET POSITION** button in the Position Editor allows you to automatically c
 
 ### Configuration
 
-Edit `config.json` to change the path in which the \logs will be.
+Edit `config.json` to change the path in which the \logs will be. If you're running multiple routes, just duplicate and rename config.json into config_twogodsrestricted.json for example. The only json file read by the program will be the config.json.
 Edit `config.json` to customize monitoring behavior:
 
 ```json
