@@ -33,6 +33,7 @@ Simply double-click `EldenRingWatcher.exe`.
 - On first run, a default `config.json` will be created in the same folder with example event flags and position splits
 - A `logs/` folder will be created for output files (events.txt and latest.json). You can change the destination of this folder in the app.
 - The monitoring window will appear and start tracking game state in real-time
+- Example of process: Start Elden Ring, start LiveSplit, start Cheat Engine, start the Watcher then start streamer.bot. **If the game crashes, you only need to reattach the CheatEngine to the game.**
 
 ### Main Interface
 
